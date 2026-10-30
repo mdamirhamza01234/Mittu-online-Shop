@@ -1,0 +1,399 @@
+<!doctype html>
+<html lang="hi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#e4bdf6">
+<title>Mittu Online Shop</title>
+<style>
+:root{--lav:#e4bdf6;--lav2:#f2dffb;--blue:#0a5db0;--red:#e2262d;--ink:#1c1b1f;--mut:#6b6b73;--line:#e6e3ea;--bg:#f6f4f8;--green:#1a9b4b}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{scroll-behavior:smooth}
+body{margin:0;font-family:system-ui,-apple-system,'Segoe UI',Roboto,'Noto Sans Devanagari','Nirmala UI',sans-serif;color:var(--ink);background:#e9e6ee}
+#app{max-width:720px;margin:0 auto;background:#fff;min-height:100vh;padding-bottom:150px;position:relative}
+button{font:inherit;cursor:pointer;border:0;background:none;color:inherit}
+.top{background:linear-gradient(180deg,var(--lav),var(--lav2));padding:14px 16px 4px;display:flex;justify-content:space-between;align-items:flex-start}
+.top small{font-size:13px;color:#3a3340}
+.top h1{margin:2px 0 0;font-size:25px;line-height:1.1;font-weight:800;letter-spacing:-.3px}
+.top .sub{font-size:13.5px;color:#4a4350;margin-top:3px}
+.live{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;color:#3a3340;margin-top:6px}
+.live i{width:8px;height:8px;border-radius:50%;background:#aaa;display:inline-block}
+.live.on i{background:var(--green);box-shadow:0 0 0 3px rgba(26,155,75,.2)}
+.cartbtn{position:relative;width:46px;height:46px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;box-shadow:0 1px 4px rgba(0,0,0,.12)}
+.badge{position:absolute;top:-4px;right:-4px;min-width:20px;height:20px;border-radius:10px;background:var(--red);color:#fff;font-size:11px;font-weight:700;display:none;align-items:center;justify-content:center;padding:0 5px}
+.badge.show{display:flex}
+.sticky{position:sticky;top:0;z-index:20;background:var(--lav2)}
+.search{padding:10px 16px 8px}
+.search label{display:flex;align-items:center;gap:10px;background:#fff;border-radius:26px;height:48px;padding:0 16px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.search input{flex:1;border:0;outline:0;font:inherit;font-size:16px;background:transparent;min-width:0}
+.tabs{display:flex;overflow-x:auto;gap:4px;padding:2px 8px 0;scrollbar-width:none;background:var(--lav2)}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 10px 8px;font-size:13px;color:#2a2530;border-bottom:3px solid transparent;white-space:nowrap}
+.tab .ti{font-size:22px;line-height:1;width:34px;height:34px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:rgba(255,255,255,.7)}
+.tab.on{border-bottom-color:#111;font-weight:700}
+.banners{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:10px;padding:14px 12px 6px;scrollbar-width:none}
+.banners::-webkit-scrollbar{display:none}
+.bn{flex:0 0 88%;scroll-snap-align:center;border-radius:16px;min-height:150px;padding:20px;display:flex;flex-direction:column;justify-content:center;position:relative;overflow:hidden;color:#fff;text-align:left}
+.bn b{font-size:24px;line-height:1.15;font-weight:800;max-width:70%}
+.bn span{font-size:13.5px;margin-top:8px;max-width:68%;opacity:.95}
+.bn em{position:absolute;right:12px;bottom:6px;font-size:84px;font-style:normal;filter:drop-shadow(0 4px 6px rgba(0,0,0,.2))}
+.sec{padding:14px 12px 0}
+.sh{display:flex;justify-content:space-between;align-items:baseline;margin:6px 4px 12px}
+.sh h2{margin:0;font-size:21px;font-weight:800;letter-spacing:-.2px}
+.lnk{color:var(--blue);font-weight:700;font-size:14px}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px 10px}
+@media(min-width:520px){.grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.card{position:relative;min-width:0}
+.card.off .pic{opacity:.55}
+.pic{position:relative;aspect-ratio:1/1;border-radius:12px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:clamp(40px,12vw,64px);overflow:hidden;padding-bottom:26px;text-align:center}
+.pic img{width:100%;height:100%;object-fit:contain;padding:6px}
+.strip{position:absolute;left:0;right:0;bottom:0;height:30px;background:#efeff2;display:flex;align-items:center;padding:0 6px}
+.chip{font-size:11px;color:#444;background:transparent;border:0;max-width:52%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:inherit;padding:0}
+select.chip{appearance:none;-webkit-appearance:none;outline:0;font-weight:700;color:#222;background:#fff;border-radius:8px;padding:2px 4px;max-width:56%}
+.pw{position:relative}.act{position:absolute;right:-2px;bottom:-14px;z-index:2}
+.add{width:70px;height:34px;border-radius:10px;border:1.5px solid var(--blue);background:#fff;color:var(--blue);font-weight:800;font-size:14.5px;letter-spacing:.3px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.add.dis{border-color:#bbb;color:#999}
+.step{display:flex;align-items:center;justify-content:space-between;width:80px;height:34px;border-radius:10px;background:var(--blue);color:#fff;font-weight:800}
+.step button{width:28px;height:34px;font-size:19px;color:#fff;line-height:1}
+.step span{font-size:14.5px}
+.oos{display:inline-block;background:#fff;border:1px solid #cfcfd6;color:#888;border-radius:8px;font-size:10.5px;padding:3px 6px;font-weight:700}
+.price{font-weight:800;font-size:19px;margin-top:22px}
+.soon{font-size:12px;color:var(--mut);font-weight:600}
+.nm{font-size:12.5px;line-height:1.3;color:#26242b;margin-top:2px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word}
+.hi{font-size:11px;color:var(--mut);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pg{padding:16px 16px 0}
+.pg h2{margin:0 0 12px;font-size:22px}
+.cgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px 10px;padding:14px 12px}
+.ctile{display:flex;flex-direction:column;align-items:center;gap:8px;font-size:12.5px;text-align:center;font-weight:600}
+.ctile .ci{width:100%;aspect-ratio:1/1;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:clamp(38px,11vw,58px)}
+.ctile small{font-weight:400;color:var(--mut);font-size:11px}
+.empty{padding:50px 24px;text-align:center;color:var(--mut)}
+.empty b{display:block;font-size:42px;margin-bottom:8px}
+.note{margin:12px 12px 0;background:#fff7e0;border:1px solid #f1d98a;color:#6b5400;border-radius:12px;padding:10px 12px;font-size:13px;line-height:1.4}
+.nav{position:fixed;left:50%;transform:translateX(-50%);bottom:max(10px,env(safe-area-inset-bottom));width:calc(100% - 20px);max-width:700px;background:#f4f1f6;border-radius:30px;box-shadow:0 2px 14px rgba(0,0,0,.18);display:flex;justify-content:space-around;padding:6px;z-index:30}
+.nav button{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:12.5px;padding:7px 0;border-radius:24px;color:#333;position:relative}
+.nav button span.i{font-size:22px;line-height:1.1}
+.nav button.on{background:#e6e1ea;font-weight:700;color:var(--red)}
+.nav .badge{top:2px;right:calc(50% - 26px)}
+.cbar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(max(10px,env(safe-area-inset-bottom)) + 72px);width:calc(100% - 20px);max-width:700px;background:var(--blue);color:#fff;border-radius:16px;padding:12px 16px;display:none;justify-content:space-between;align-items:center;z-index:29;font-weight:700;box-shadow:0 4px 14px rgba(10,93,176,.4)}
+.cbar.show{display:flex}
+.cbar small{display:block;font-weight:500;opacity:.9;font-size:12px}
+.page{position:fixed;inset:0;left:50%;transform:translateX(-50%);width:100%;max-width:720px;background:#fff;z-index:60;overflow:auto;display:none;padding-bottom:40px}
+.page.show{display:block}
+.ph{position:sticky;top:0;background:var(--lav);display:flex;align-items:center;gap:8px;padding:12px 8px;z-index:2}
+.ph h2{margin:0;font-size:19px}
+.ph button{font-size:26px;width:40px;height:40px;border-radius:50%}
+.line{display:flex;gap:12px;padding:14px 16px;border-bottom:1px solid var(--line);align-items:center}
+.line .lp{width:58px;height:58px;border-radius:12px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:32px;flex:none;overflow:hidden}
+.line .lp img{width:100%;height:100%;object-fit:contain}
+.line .li{flex:1;min-width:0}
+.line .li b{font-size:14px;display:block;line-height:1.25}
+.line .li small{color:var(--mut);font-size:12px}
+.line .lr{text-align:right;flex:none}
+.line .lr .step{margin-left:auto;margin-bottom:6px}
+.line .lr div{font-weight:800}
+.line.bad{opacity:.55}
+.tot{padding:16px;display:flex;justify-content:space-between;font-size:18px;font-weight:800}
+.btn{display:block;width:calc(100% - 32px);margin:8px 16px;height:50px;border-radius:14px;background:var(--blue);color:#fff;font-weight:800;font-size:16px}
+.btn:disabled{opacity:.6}
+.btn.ghost{background:#fff;color:var(--blue);border:1.5px solid var(--blue)}
+.form{padding:8px 16px}
+.form label{display:block;font-size:13px;color:var(--mut);margin:14px 0 5px;font-weight:600}
+.form input,.form textarea{width:100%;border:1.5px solid #d6d2dc;border-radius:12px;padding:12px;font:inherit;font-size:16px;outline:0;background:#fff}
+.form input:focus,.form textarea:focus{border-color:var(--blue)}
+.pay{display:flex;gap:10px;margin-top:4px}
+.pay label{flex:1;margin:0;border:1.5px solid #d6d2dc;border-radius:12px;padding:12px;display:flex;gap:8px;align-items:center;color:var(--ink);font-size:14px}
+.pay input{width:auto}
+.err{color:var(--red);font-size:13px;margin:10px 16px 0;min-height:18px}
+.ok{padding:60px 24px;text-align:center}
+.ok .tick{width:84px;height:84px;border-radius:50%;background:var(--green);color:#fff;font-size:48px;display:flex;align-items:center;justify-content:center;margin:0 auto 18px}
+.ok h2{margin:0 0 8px}
+.ok .oid{display:inline-block;margin:12px 0;background:var(--bg);border-radius:10px;padding:8px 16px;font-weight:800;letter-spacing:1px}
+.toast{position:fixed;left:50%;bottom:150px;transform:translateX(-50%);background:#222;color:#fff;padding:10px 16px;border-radius:22px;font-size:13.5px;z-index:99;opacity:0;pointer-events:none;transition:opacity .2s;max-width:90%;text-align:center}
+.toast.show{opacity:1}
+.foot{text-align:center;color:var(--mut);font-size:12px;padding:28px 16px 6px}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="top">
+    <div>
+      <small>Online order</small>
+      <h1>Mittu Wholesaler</h1>
+      <div class="sub">Naugachia &amp; Kursela ke liye</div>
+      <div class="live" id="live"><i></i><span>Connecting…</span></div>
+    </div>
+    <button class="cartbtn" data-go="cart" aria-label="Cart">🛒<span class="badge" id="b1">0</span></button>
+  </div>
+  <div class="sticky">
+    <div class="search"><label><span>🔍</span><input id="q" type="search" placeholder="Search karein: atta, tel, sabun…" autocomplete="off"></label></div>
+    <div class="tabs" id="tabs"></div>
+  </div>
+  <div id="main"></div>
+  <div class="foot">Mittu Wholesaler &amp; Retailer · Daam dukaan ke live stock se</div>
+</div>
+
+<div class="cbar" id="cbar" data-go="cart"><div><span id="cbn">0 items</span><small>View cart</small></div><div id="cbt">₹0 ›</div></div>
+<nav class="nav" id="nav">
+  <button data-view="home" class="on"><span class="i">🏠</span>Home</button>
+  <button data-view="cats"><span class="i">🗂️</span>Categories</button>
+  <button data-view="again"><span class="i">🔁</span>Buy Again</button>
+  <button data-go="cart"><span class="i">🛒</span>Cart<span class="badge" id="b2">0</span></button>
+</nav>
+
+<div class="page" id="pCart">
+  <div class="ph"><button data-back aria-label="Back">←</button><h2>Aapka Cart</h2></div>
+  <div id="cartBody"></div>
+</div>
+<div class="page" id="pCo">
+  <div class="ph"><button data-back="cart" aria-label="Back">←</button><h2>Delivery Details</h2></div>
+  <div class="form">
+    <label for="fName">Aapka naam</label><input id="fName" autocomplete="name" maxlength="60">
+    <label for="fPhone">Mobile number (10 digit)</label><input id="fPhone" type="tel" inputmode="numeric" autocomplete="tel-national" maxlength="10">
+    <label for="fAddr">Pura pata (gaon / mohalla / landmark)</label><textarea id="fAddr" rows="3" maxlength="250" autocomplete="street-address"></textarea>
+    <label for="fNote">Dukaandar ke liye note (optional)</label><input id="fNote" maxlength="120">
+    <label>Payment</label>
+    <div class="pay"><label><input type="radio" name="pay" value="COD" checked> Cash on delivery</label><label><input type="radio" name="pay" value="UPI"> UPI (delivery par)</label></div>
+  </div>
+  <div class="err" id="coErr"></div>
+  <div class="tot"><span>Total</span><span id="coTot">₹0</span></div>
+  <button class="btn" id="placeBtn">Order Karein</button>
+</div>
+<div class="page" id="pOk">
+  <div class="ok"><div class="tick">✓</div><h2>Order mil gaya!</h2>
+  <div>Aapka order dukaan tak pahunch gaya hai.</div><div class="oid" id="okId"></div>
+  <div style="color:var(--mut);font-size:14px">Dukaan se aapko confirmation call aayega.</div></div>
+  <button class="btn" id="okBtn">Aur kharidari karein</button>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+'use strict';
+/* ---------- Catalogue (PDF inventory list) ---------- */
+const CATALOG=[[1,"Arwa Rice","Per Bag (25kg)"],[2,"Usna Rice","Per Bag (25kg)"],[3,"Basmati Rice","Per Bag (25kg)"],[4,"Mota Rice","Per Bag (25kg)"],[5,"Wheat (Gehun)","Per Bag (30kg)"],[6,"Atta (Flour)","Per Bag (10kg)"],[7,"Maida","Per Pkt (1kg)"],[8,"Suji","Per Pkt (1kg)"],[9,"Besan","Per Pkt (1kg)"],[10,"Sattu","Per Pkt (1kg)"],[11,"Chuda (Flattened Rice)","Per Bag (30kg)"],[12,"Poha","Per Pkt (1kg)"],[13,"Murmura","Per Large Bag"],[14,"Daliya","Per Pkt (500g)"],[15,"Sewai","Per Pkt (250g)"],[16,"Makka (Corn)","Per Kg"],[17,"Makai Atta","Per Pkt (1kg)"],[18,"Chawal Ka Atta","Per Pkt (1kg)"],[19,"Gehun Ka Daliya","Per Pkt (500g)"],[20,"Sabudana","Per Pkt (1kg)"],[21,"Arhar Dal","Per Kg"],[22,"Masoor Dal","Per Kg"],[23,"Moong Dal","Per Kg"],[24,"Urad Dal","Per Kg"],[25,"Chana Dal","Per Kg"],[26,"Kala Chana","Per Kg"],[27,"Safed Chana","Per Kg"],[28,"Kabuli Chana","Per Kg"],[29,"Sukha Matar","Per Kg"],[30,"Hari Matar","Per Pkt (500g)"],[31,"Rajma","Per Kg"],[32,"Sabut Moong","Per Kg"],[33,"Sabut Masoor","Per Kg"],[34,"Sabut Urad","Per Kg"],[35,"Matar Dal","Per Kg"],[36,"Sarso Tel (Mustard Oil)","Per Pkt (1L)"],[37,"Soyabean Tel","Per Pkt (1L)"],[38,"Refined Tel","Per Pkt (1L)"],[39,"Sunflower Tel","Per Pkt (1L)"],[40,"Pamolin Tel","Per Pkt (1L)"],[41,"Nariyal Tel (Blue Bottle)","Per Pkt (200ml)"],[42,"Vanaspati Ghee (Dalda)","Per Pkt (1L)"],[43,"Desi Ghee (Amul/Sudha)","Per Pkt (1L)"],[44,"Chota Tel Pouches","Per Pkt (100ml)"],[45,"1 Liter Tel Pack","Per Pkt (1L)"],[46,"5 Liter Tel Dibba","Per Jar (5L)"],[47,"Haldi Powder","Per Pkt (200g)"],[48,"Lal Mirch Powder","Per Pkt (200g)"],[49,"Dhania Powder","Per Pkt (200g)"],[50,"Jeera (Cumin)","Per Kg"],[51,"Sabut Dhania","Per Kg"],[52,"Ajwain","Per Kg"],[53,"Methi Dana","Per Kg"],[54,"Rai / Sarso Seed","Per Kg"],[55,"Saunf","Per Kg"],[56,"Hing","Per Pkt (50g)"],[57,"Garam Masala","Per Pkt (100g)"],[58,"Sabji Masala","Per Pkt (100g)"],[59,"Chaat Masala","Per Pkt (100g)"],[60,"Chole Masala","Per Pkt (100g)"],[61,"Biryani Masala","Per Pkt (50g)"],[62,"Chicken Masala","Per Pkt (100g)"],[63,"Machli Masala","Per Pkt (100g)"],[64,"Tejpatta","Per Pkt (50g)"],[65,"Dalchini","Per Kg"],[66,"Laung (Cloves)","Per Kg"],[67,"Choti Elaichi","Per Kg"],[68,"Kali Mirch","Per Kg"],[69,"Sukhi Lal Mirch","Per Kg"],[70,"Achar Masala","Per Pkt (200g)"],[71,"Chini (Sugar)","Per Bag (50kg)"],[72,"Namak (Tata Salt)","Per Pkt (1kg)"],[73,"Kala Namak","Per Pkt (1kg)"],[74,"Sendha Namak","Per Pkt (1kg)"],[75,"Gud (Jaggery)","Per Kg"],[76,"Mishri","Per Kg"],[77,"Bura (Sugar Powder)","Per Kg"],[78,"Shahad (Honey)","Per Pkt (250g)"],[79,"Glucose Powder","Per Pkt (100g)"],[80,"Choti Packing Namak","Per Pkt (200g)"],[81,"Parle-G (Big)","Per Pkt"],[82,"Glucose Biscuits","Per Pkt"],[83,"Marie Gold Biscuits","Per Pkt"],[84,"Cream Biscuits","Per Pkt"],[85,"Chocolate Biscuits","Per Pkt"],[86,"Nariyal Biscuits","Per Pkt"],[87,"Jeera Biscuits","Per Pkt"],[88,"Namkeen Biscuits","Per Pkt"],[89,"Digestive Biscuits","Per Pkt"],[90,"Chote Pkt Biscuits","Per Box (30 pcs)"],[91,"Rask (Premium)","Per Pkt"],[92,"Toast Biscuits","Per Pkt"],[93,"Khari Biscuit","Per Pkt"],[94,"Cookies Pack","Per Pkt"],[95,"Wafer Biscuits","Per Pkt"],[96,"Bhujia (Haldiram)","Per Pkt (150g)"],[97,"Aloo Bhujia","Per Pkt (35g)"],[98,"Mix Namkeen","Per Pkt (200g)"],[99,"Sev Namkeen","Per Pkt (200g)"],[100,"Chana Dal Namkeen","Per Pkt (50g)"],[101,"Moong Dal Namkeen","Per Pkt (50g)"],[102,"Masala Moongfali","Per Pkt (100g)"],[103,"Chivda Pack","Per Pkt (250g)"],[104,"Mathri Pack","Per Pkt (250g)"],[105,"Namkeepare","Per Pkt (250g)"],[106,"Aloo Chips (Lays)","Per Pkt"],[107,"Kele Ke Chips","Per Pkt (100g)"],[108,"Kurkure","Per Pkt"],[109,"Fryums Pack","Per Pkt (150g)"],[110,"Papad Large Pack","Per Pkt (200g)"],[111,"Bhuna Chana","Per Pkt (250g)"],[112,"Chana Jor Garam","Per Pkt (100g)"],[113,"Popcorn Instant","Per Pkt"],[114,"Chote Pkt Namkeen","Per Outer Box"],[115,"Masala Chips","Per Pkt"],[116,"Choti Toffee (1 Rs)","Per Pkt (100 pcs)"],[117,"Doodh Wali Toffee","Per Pkt (100 pcs)"],[118,"Chocolate Toffee","Per Pkt (100 pcs)"],[119,"Lollipop Pack","Per Pkt (50 pcs)"],[120,"Chewing Gum","Per Pkt (50 pcs)"],[121,"Mint Candy","Per Pkt (100 pcs)"],[122,"Imli Candy","Per Pkt (100 pcs)"],[123,"Aamla Candy","Per Pkt (200g)"],[124,"Choti Chocolate (5 Rs)","Per Box (50 pcs)"],[125,"Chocolate Wafer","Per Piece"],[126,"Jelly Candy","Per Pkt (100 pcs)"],[127,"Meethi Saunf","Per Pkt (100g)"],[128,"Elaichi Dana","Per Pkt (100g)"],[129,"Choti Candy Pack","Per Pack"],[130,"Toffee Jar for Kids","Per Jar"],[131,"Chaypatti (Tata Tea)","Per Pkt (250g)"],[132,"Choti Packing Chai","Per Pkt (30g)"],[133,"Khuli Chai (Loose)","Per Kg"],[134,"Green Tea","Per Box (25 bags)"],[135,"Coffee (BRU/Nescafe)","Per Pkt (50g)"],[136,"Doodh Powder (Amulya)","Per Pkt (500g)"],[137,"Malted Health Drink","Per Jar (500g)"],[138,"Packed Juice (Real)","Per Pkt (1L)"],[139,"Sharbat (Roohafza)","Per Bottle (750ml)"],[140,"Glucose Powder Large","Per Pkt (200g)"],[141,"Botled Water (20L)","Per Jar"],[142,"Cold Drink (250ml)","Per Bottle"],[143,"Packed Nariyal Pani","Per Tetra Pack"],[144,"Nimbu Drink Mix","Per Sachet Pack"],[145,"Instant Tea Mix","Per Box"],[146,"Instant Noodles (Maggi)","Per Pkt (70g)"],[147,"Maggi Masala e Magic","Per Sachet"],[148,"Pasta Pack","Per Pkt (200g)"],[149,"Macaroni Pack","Per Pkt (200g)"],[150,"Tomato Sauce (Kisan)","Per Bottle (1kg)"],[151,"Chili Sauce","Per Bottle (200g)"],[152,"Soya Sauce","Per Bottle (200g)"],[153,"Jam (Kisan 100g)","Per Bottle"],[154,"Achar Pack (Mixed)","Per Pkt (500g)"],[155,"Papad Small Pack","Per Pkt"],[156,"Sewai (Roasted)","Per Pkt (200g)"],[157,"Custard Powder","Per Pkt (100g)"],[158,"Baking Powder","Per Container"],[159,"Cornflour","Per Pkt (200g)"],[160,"Instant Soup Pack","Per Pkt"],[161,"Nahane Ka Sabun (Dettol)","Per Piece"],[162,"Kapde Dhone Ka Sabun","Per Piece"],[163,"Detergent Powder (Surf)","Per Pkt (1kg)"],[164,"Detergent Bar (Rin)","Per Bar"],[165,"Detergent Liquid","Per Bottle (1L)"],[166,"Bartan Dhone Ka Sabun","Per Bar"],[167,"Dishwash Bar (Vim Large)","Per Bar"],[168,"Bartan Dhone Ka Powder","Per Pkt (500g)"],[169,"Dishwash Liquid","Per Bottle (500ml)"],[170,"Fabric Softener (Comfort)","Per Bottle (200ml)"],[171,"Kapdo Ki Neel (Ujala)","Per Bottle (75ml)"],[172,"Bleaching Powder","Per Pkt (500g)"],[173,"Chota Pkt Detergent","Per Outer Box"],[174,"Scrubber (Green)","Per Piece"],[175,"Steel Scrubber","Per Piece"],[176,"Shampoo Pouch (1 Rs)","Per Box (120 pcs)"],[177,"Shampoo Bottle (Clinic)","Per Bottle (175ml)"],[178,"Anti-Dandruff Shampoo","Per Bottle (180ml)"],[179,"Conditioner Pack","Per Tube (100ml)"],[180,"Nariyal Hair Oil (Bada)","Per Bottle (400ml)"],[181,"Aamla Hair Oil","Per Bottle (180ml)"],[182,"Samanya Hair Oil","Per Bottle (200ml)"],[183,"Hair Cream","Per Pack"],[184,"Hair Color (Godrej)","Per Pack"],[185,"Mehandi Powder Pack","Per Pkt (100g)"],[186,"Kanghi (Comb Regular)","Per Piece"],[187,"Hair Brush","Per Piece"],[188,"Hair Gel Tube","Per Tube"],[189,"Chote Shampoo Sashe","Per Box"],[190,"Hair Serum","Per Bottle"],[191,"Toothpaste (Colgate Med)","Per Pkt (150g)"],[192,"Toothbrush (Adult)","Per Piece"],[193,"Bachon Ka Toothbrush","Per Piece"],[194,"Toothpowder","Per Container"],[195,"Face Wash (Himalaya)","Per Tube (50ml)"],[196,"Cold Cream (Ponds)","Per Box (30g)"],[197,"Moisturizer Lotion","Per Bottle (100ml)"],[198,"Talcum Powder","Per Pack (100g)"],[199,"Body Lotion","Per Bottle (200ml)"],[200,"Petroleum Jelly (Vaseline)","Per Pot (42g)"],[201,"Lip Balm","Per Piece"],[202,"Shaving Cream","Per Tube (80g)"],[203,"Razor (Gillette Ready)","Per Piece"],[204,"Blade Pocket","Per Tuck (10 blades)"],[205,"Deodorant Spray","Per Can"],[206,"Handwash Refill Pack","Per Pkt (180ml)"],[207,"Sanitizer Bottle","Per Bottle (100ml)"],[208,"Sanitary Pad (Whisper)","Per Pkt (7 pads)"],[209,"Kanghi Premium","Per Piece"],[210,"Nail Cutter","Per Piece"],[211,"Phenyle Bottle","Per Bottle (1L)"],[212,"Floor Cleaner (Lizol)","Per Bottle (500ml)"],[213,"Toilet Cleaner (Harpic)","Per Bottle (500ml)"],[214,"Bathroom Cleaner","Per Bottle (500ml)"],[215,"Glass Cleaner (Colin)","Per Spray Bottle"],[216,"Jhadu (Phool Jhadu)","Per Piece"],[217,"Pocha (Mop Head)","Per Piece"],[218,"Safai Brush","Per Piece"],[219,"Toilet Brush","Per Piece"],[220,"Safai Kapda (Microfiber)","Per Piece"],[221,"Sponge Scrubber","Per Piece"],[222,"Kachre Ki Thaili","Per Pack (30 bags)"],[223,"Air Freshener (Odonil)","Per Pkt (50g)"],[224,"Machar Machin Coil","Per Box (10 coils)"],[225,"Machar Machine Refill","Per Refill Bottle"],[226,"Agarbatti Big Pack","Per Pack"],[227,"Dhupbatti Pack","Per Pack"],[228,"Kapoor (Camphor)","Per Pkt (50g)"],[229,"Rui (Cotton Standard)","Per Pkt (50g)"],[230,"Pooja Ki Bati (Ready)","Per Pkt (100 pcs)"],[231,"Diya (Mitti/Clay)","Per Box (50 pcs)"],[232,"Pooja Tel (Sesame)","Per Bottle (200ml)"],[233,"Roli Packet","Per Pkt"],[234,"Sindoor Loose Pack","Per Pkt (50g)"],[235,"Chandan Powder","Per Pkt (50g)"],[236,"Pooja Ki Supari","Per Pack (50 pcs)"],[237,"Pooja Kit/Packet Complete","Per Pack"],[238,"Machis Box (Large)",""],[239,"Mombatti (Candle Pack)","Per Pack (6 candles)"],[240,"Dhup Cone Pack","Per Pack"],[241,"Machis Regular",""],[242,"Mombatti Choti","Per Pack"],[243,"Battery Torch Cell","Per Pair (2 cells)"],[244,"Plastic Ke Thaile","Per Pack (100 pcs)"],[245,"Kagaz Ke Bag","Per Pack (100 pcs)"],[246,"Aluminium Foil","Per Roll (25m)"],[247,"Tissue Paper Pack","Per Pack (100 sheets)"],[248,"Paper Napkin Pack","Per Pack"],[249,"Disposable Plate Pack","Per Pack (50 pcs)"],[250,"Disposable Katori Pack","Per Pack (50 pcs)"],[251,"Disposable Glass Pack","Per Pack (50 pcs)"],[252,"Paper Cup Pack","Per Pack (50 pcs)"],[253,"Plastic Chammach Pack","Per Pack (100 pcs)"],[254,"Rubber Band Packet","Per Pack (200g)"],[255,"Moongfali (Peanuts)","Per Kg"],[256,"Badam (Almonds)","Per Kg"],[257,"Kaju (Cashews)","Per Kg"],[258,"Kishmish (Raisins)","Per Kg"],[259,"Makhana","Per Pkt (100g)"],[260,"Sukha Nariyal (Gari)","Per Kg"],[261,"Nariyal Burada","Per Kg"],[262,"Chuhara (Dry Dates)","Per Kg"],[263,"Khajur (Dates Pack)","Per Pack (500g)"],[264,"Chironji","Per Pkt (100g)"],[265,"Akhrot (Walnuts)","Per Kg"],[266,"Pista","Per Pkt (100g)"],[267,"Bhuna Chana Premium","Per Kg"],[268,"Til (Sesame Seeds)","Per Kg"],[269,"Alsi Ke Beej (Flax)","Per Kg"]];
+const CATS=[
+ {id:'rice',n:'Atta & Anaaj',e:'🌾',bg:'#fff1cf'},{id:'dal',n:'Dal & Dalhan',e:'🫘',bg:'#ffe3d3'},
+ {id:'oil',n:'Tel & Ghee',e:'🛢️',bg:'#fff7bf'},{id:'masala',n:'Masale',e:'🌶️',bg:'#ffd9d6'},
+ {id:'sugar',n:'Chini, Namak & Meetha',e:'🧂',bg:'#eaf1ff'},{id:'biscuit',n:'Biscuits',e:'🍪',bg:'#fde6cf'},
+ {id:'snack',n:'Namkeen & Snacks',e:'🥨',bg:'#ffe9b8'},{id:'sweet',n:'Toffee & Chocolate',e:'🍫',bg:'#f6dcee'},
+ {id:'drink',n:'Chai, Coffee & Drinks',e:'🍵',bg:'#dff3e4'},{id:'food',n:'Noodles & Sauces',e:'🍜',bg:'#ffe2c6'},
+ {id:'laundry',n:'Kapde & Bartan Safai',e:'🧼',bg:'#dff0fb'},{id:'hair',n:'Hair Care',e:'💇',bg:'#efe2fb'},
+ {id:'care',n:'Personal Care',e:'🪥',bg:'#fde0ea'},{id:'clean',n:'Ghar ki Safai',e:'🧹',bg:'#dcf3f1'},
+ {id:'pooja',n:'Pooja & Ghar Saman',e:'🪔',bg:'#fff0c9'},{id:'pack',n:'Disposable & Packing',e:'🛍️',bg:'#e9ecef'},
+ {id:'dry',n:'Dry Fruits & Beej',e:'🥜',bg:'#f3e3cf'},{id:'misc',n:'Anya Saman',e:'🛒',bg:'#eee'}
+];
+const CATMAP={};CATS.forEach(c=>CATMAP[c.id]=c);
+const RANGES=[[1,20,'rice'],[21,35,'dal'],[36,46,'oil'],[47,70,'masala'],[71,80,'sugar'],[81,95,'biscuit'],[96,115,'snack'],[116,130,'sweet'],[131,145,'drink'],[146,160,'food'],[161,175,'laundry'],[176,190,'hair'],[191,210,'care'],[211,222,'clean'],[223,242,'pooja'],[243,254,'pack'],[255,269,'dry']];
+const CAT=CATALOG.map(([n,name,basis])=>({n,name,basis,cat:(RANGES.find(r=>n>=r[0]&&n<=r[1])||[0,0,'misc'])[2]}));
+const KW=[[/rice|chawal|atta|aata|gehun|wheat|maida|suji|besan|sattu|poha|daliya|chuda|murmura|sabudana|makka|makai/i,'rice'],[/dal\b|chana|matar|rajma|moong|masoor|urad|arhar/i,'dal'],[/tel\b|oil\b|ghee|vanaspati|dalda/i,'oil'],[/masala|haldi|mirch|dhania|jeera|hing|ajwain|methi|saunf|tejpatta|dalchini|laung|elaichi|spice/i,'masala'],[/chini|sugar|namak|salt|gud\b|mishri|shahad|honey/i,'sugar'],[/biscuit|cookie|rask|toast|wafer|parle/i,'biscuit'],[/namkeen|bhujia|chips|kurkure|papad|chivda|mathri|fryum|popcorn/i,'snack'],[/toffee|candy|chocolate|lollipop|gum|jelly/i,'sweet'],[/chai|tea\b|coffee|juice|drink|sharbat|water|doodh|milk/i,'drink'],[/maggi|noodle|pasta|macaroni|sauce|jam\b|soup|custard|baking/i,'food'],[/sabun|soap|detergent|surf|vim|dishwash|scrubber|handwash/i,'laundry'],[/shampoo|hair|conditioner|mehandi|kanghi|comb/i,'hair'],[/toothpaste|toothbrush|face|cream|lotion|razor|blade|shaving|deo|talc|vaseline|sanitary|pad\b/i,'care'],[/phenyle|cleaner|jhadu|mop|pocha|brush|harpic|lizol|colin/i,'clean'],[/agarbatti|dhup|kapoor|pooja|diya|roli|sindoor|machis|matchbox|candle|mombatti|machar|odonil|battery/i,'pooja'],[/plate|katori|cup|foil|tissue|napkin|thaila|thaili|bag\b|plastic|rubber/i,'pack'],[/badam|kaju|pista|akhrot|kishmish|makhana|khajur|nariyal|moongfali|til\b|alsi|chironji/i,'dry']];
+const EM=[[/hair\s*(oil|cream|gel|serum|color)|hair color/i,'🧴'],[/hair brush|kanghi|comb/i,'💇'],[/shampoo|conditioner/i,'🧴'],[/mehandi/i,'🌿'],[/rice|chawal|chuda|poha/i,'🍚'],[/maggi|noodle|pasta|macaroni|sewai/i,'🍜'],[/wheat|gehun|atta|maida|suji|besan|sattu|daliya|makka|makai|murmura|sabudana/i,'🌾'],[/ghee/i,'🧈'],[/dal\b|chana|matar|rajma|moong\b|masoor|urad|arhar/i,'🫘'],[/pooja ki tel|pooja tel|hair oil/i,'🪔'],[/tel\b|oil\b/i,'🛢️'],[/haldi|mirch|dhania|jeera|cumin|masala|hing|ajwain|methi|\brai\b|saunf|tejpatta|dalchini|laung|elaichi|spice/i,'🌶️'],[/honey|shahad/i,'🍯'],[/namak|salt/i,'🧂'],[/chini|sugar|bura|mishri|gud\b|jaggery/i,'🍬'],[/biscuit|cookie|rask|toast|khari|wafer|parle|marie/i,'🍪'],[/chips|kurkure|lays/i,'🍟'],[/bhujia|namkeen|chivda|mathri|namkeepare|fryum|papad|popcorn|bhuna chana|chana jor/i,'🥨'],[/chocolate/i,'🍫'],[/toffee|candy|lollipop|chewing|jelly/i,'🍬'],[/coffee/i,'☕'],[/chai|tea\b|chaypatti/i,'🍵'],[/doodh|milk|malted|health drink/i,'🥛'],[/juice|sharbat|cold drink|nimbu|pani|drink/i,'🧃'],[/water/i,'💧'],[/sauce|ketchup|jam\b|achar/i,'🍅'],[/soup/i,'🥣'],[/custard|baking|cornflour/i,'🧁'],[/toothpaste|toothbrush|toothpowder/i,'🪥'],[/razor|blade|shaving/i,'🪒'],[/sanitary|pad\b/i,'🌸'],[/nail/i,'✂️'],[/soap|sabun|detergent|surf|rin\b|vim|dishwash|handwash|neel|bleach/i,'🧼'],[/lotion|cream|face wash|vaseline|jelly|balm|talc|deodorant|spray|sanitizer|moisturi|phenyle|cleaner|softener/i,'🧴'],[/jhadu|pocha|mop|brush/i,'🧹'],[/scrubber|sponge|kapda/i,'🧽'],[/thaili|thaile|bag\b|plastic/i,'🛍️'],[/odonil|freshener/i,'🌸'],[/machar|coil/i,'🦟'],[/agarbatti|dhup|kapoor|diya|pooja|roli|sindoor|chandan|supari|bati\b|rui\b/i,'🪔'],[/machis|match/i,'🔥'],[/mombatti|candle/i,'🕯️'],[/battery|torch/i,'🔋'],[/foil/i,'📦'],[/tissue|napkin/i,'🧻'],[/plate|katori|glass|cup|chammach/i,'🍽️'],[/rubber band/i,'⭕'],[/moongfali|peanut/i,'🥜'],[/badam|almond|akhrot|walnut/i,'🌰'],[/kaju|cashew|pista/i,'🥜'],[/kishmish|raisin/i,'🍇'],[/makhana/i,'⚪'],[/nariyal|coconut|gari|burada/i,'🥥'],[/khajur|chuhara|dates/i,'🌴'],[/til\b|sesame|alsi|flax|chironji/i,'🌱']];
+const STOP=new Set(['per','pkt','pkts','pack','packet','the','of','ka','ke','ki','and','a','pouch','bottle']);
+const toks=s=>new Set(String(s).toLowerCase().split(/[^a-z0-9]+/).filter(t=>t&&!STOP.has(t)));
+const CATTOK=CAT.map(c=>({c,t:toks(c.name)}));
+function matchCat(name){
+  const t=toks(name);if(!t.size)return null;let best=null,bj=0;
+  for(const x of CATTOK){let inter=0;t.forEach(w=>{if(x.t.has(w))inter++});
+    const min=Math.min(t.size,x.t.size);if(!min||inter<min)continue;
+    const j=inter/(t.size+x.t.size-inter);if(j>bj){bj=j;best=x.c}}
+  return best;
+}
+function kwCat(name){for(const [r,c] of KW){if(r.test(name))return c}return 'misc'}
+function basisLabel(b){b=String(b||'').replace(/^Per\s+/i,'');const m=b.match(/^(.*?)\s*\((.*)\)$/);return m?m[2]+' '+m[1]:(b||'1 pack')}
+function emojiFor(name,cat){for(const [r,e] of EM){if(r.test(name))return e}return cat.e}
+/* ---------- helpers ---------- */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt=n=>{n=Math.round(n*100)/100;return Number.isInteger(n)?String(n):n.toFixed(2)};
+const inr=n=>'₹'+fmt(n);
+const uLabel=u=>{u=String(u||'').trim();if(!u)return '1 pcs';return /^\d/.test(u)?u:'1 '+u};
+function load(k,d){try{const v=JSON.parse(localStorage.getItem(k));return v==null?d:v}catch(e){return d}}
+function save(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+let toastT;function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),1800)}
+/* ---------- state ---------- */
+let items=[],byId=new Map(),isLive=false;
+let liveRaw=load('mittu_shop_live',null);
+let cart=load('mittu_shop_cart',{});
+let hist=load('mittu_shop_orders',[]);
+const sel={};
+let S={view:'home',cat:'all',q:''};
+function rebuild(){
+  const raw=liveRaw&&typeof liveRaw==='object'&&Object.keys(liveRaw).length?liveRaw:null;
+  if(raw){
+    isLive=true;
+    items=Object.entries(raw).map(([id,o])=>{
+      if(!o||!o.n)return null;
+      const vv=Array.isArray(o.v)?o.v:Object.values(o.v||{});
+      const v=vv.map(x=>({p:Number(x&&x.p)||0,u:String((x&&x.u)||'')})).filter(x=>x.p>0);
+      const m=matchCat(String(o.n));
+      return {id,name:String(o.n),hindi:o.h?String(o.h):'',v,s:!(o.s===0||o.s===false),img:(typeof o.i==='string'&&/^https:\/\//.test(o.i))?o.i:'',cat:m?m.cat:kwCat(String(o.n)),ord:m?m.n:1000,live:true,basis:m?m.basis:''};
+    }).filter(it=>it&&it.v.length);
+  }else{
+    isLive=false;
+    items=CAT.map(c=>({id:'c'+c.n,name:c.name,hindi:'',v:[],s:true,img:'',cat:c.cat,ord:c.n,live:false,basis:c.basis}));
+  }
+  items.sort((a,b)=>a.ord-b.ord||a.name.localeCompare(b.name));
+  byId=new Map(items.map(i=>[i.id,i]));
+}
+/* ---------- rendering ---------- */
+const ckey=(id,u)=>id+'|'+u;
+function qtyOf(it,v){const c=cart[ckey(it.id,v.u)];return c?c.q:0}
+function actHTML(it){
+  const vi=Math.min(sel[it.id]||0,Math.max(it.v.length-1,0));const v=it.v[vi];
+  if(!it.live||!v)return '<button class="add dis" disabled>Jaldi</button>';
+  if(!it.s)return '<span class="oos">Out of stock</span>';
+  const q=qtyOf(it,v);
+  if(!q)return `<button class="add" data-add="${esc(it.id)}" data-vi="${vi}">ADD</button>`;
+  return `<div class="step"><button data-minus="${esc(it.id)}" data-vi="${vi}" aria-label="Kam karein">−</button><span>${q}</span><button data-plus="${esc(it.id)}" data-vi="${vi}" aria-label="Badhayein">+</button></div>`;
+}
+function cardHTML(it){
+  const cat=CATMAP[it.cat]||CATMAP.misc;
+  const vi=Math.min(sel[it.id]||0,Math.max(it.v.length-1,0));const v=it.v[vi];
+  const em=emojiFor(it.name,cat);
+  const pic=it.img?`<img loading="lazy" src="${esc(it.img)}" alt="" onerror="this.replaceWith(document.createTextNode('${em}'))">`:em;
+  let chip;
+  if(!it.live)chip=`<span class="chip" style="max-width:58%">${esc(basisLabel(it.basis))}</span>`;
+  else if(it.v.length>1)chip=`<select class="chip" data-vsel="${esc(it.id)}" aria-label="Unit">${it.v.map((x,i)=>`<option value="${i}"${i===vi?' selected':''}>${esc(uLabel(x.u))}</option>`).join('')}</select>`;
+  else chip=`<span class="chip">${esc(uLabel(v.u))}</span>`;
+  const price=v?`<div class="price">${inr(v.p)}</div>`:'<div class="price"><span class="soon">Price jaldi</span></div>';
+  return `<div class="card${it.s?'':' off'}" data-card="${esc(it.id)}"><div class="pw"><div class="pic" style="background:${cat.bg}">${pic}<div class="strip">${chip}</div></div><div class="act">${actHTML(it)}</div></div>${price}<div class="nm">${esc(it.name)}</div>${it.hindi?`<div class="hi">${esc(it.hindi)}</div>`:''}</div>`;
+}
+function repaint(id){
+  const it=byId.get(id);if(!it)return;
+  document.querySelectorAll('[data-card="'+CSS.escape(id)+'"]').forEach(el=>{const t=document.createElement('div');t.innerHTML=cardHTML(it);el.replaceWith(t.firstChild)});
+}
+function catItems(c){return items.filter(i=>i.cat===c)}
+function usedCats(){return CATS.filter(c=>catItems(c.id).length)}
+function renderTabs(){
+  const cs=usedCats();
+  $('#tabs').innerHTML=`<button class="tab${S.cat==='all'?' on':''}" data-cat="all"><span class="ti">🏠</span>Sab</button>`+cs.map(c=>`<button class="tab${S.cat===c.id?' on':''}" data-cat="${c.id}"><span class="ti">${c.e}</span>${esc(c.n)}</button>`).join('');
+}
+const BANNERS=[
+ {t:'Poora Kirana, Ek Jagah',s:'Atta, dal, tel, masale — sab kuch mobile se order karein',e:'🛒',g:'linear-gradient(135deg,#7b3fe4,#d65db1)',c:'rice'},
+ {t:'Dry Fruits & Masale',s:'Badam, kaju, pista aur rozana ke masale',e:'🥜',g:'linear-gradient(135deg,#f08a24,#e2492d)',c:'dry'},
+ {t:'Safai & Personal Care',s:'Sabun, shampoo, toothpaste aur ghar ki safai',e:'🧼',g:'linear-gradient(135deg,#0f9aa8,#2f6fd6)',c:'laundry'}
+];
+function sec(c,list,all){return `<section class="sec"><div class="sh"><h2>${c.e} ${esc(c.n)}</h2>${all?`<button class="lnk" data-cat="${c.id}">Sab dekhein ›</button>`:''}</div><div class="grid">${list.map(cardHTML).join('')}</div></section>`}
+function render(){
+  renderTabs();
+  const m=$('#main');let h='';
+  const q=S.q.trim().toLowerCase();
+  if(q){
+    const ws=q.split(/\s+/);
+    const r=items.filter(i=>{const s=(i.name+' '+i.hindi).toLowerCase();return ws.every(w=>s.includes(w))});
+    h=r.length?`<section class="sec"><div class="sh"><h2>"${esc(S.q.trim())}" ke natije</h2></div><div class="grid">${r.map(cardHTML).join('')}</div></section>`:'<div class="empty"><b>🔍</b>Kuch nahi mila. Doosra naam try karein.</div>';
+  }else if(S.view==='cats'){
+    h='<div class="pg"><h2>Categories</h2></div><div class="cgrid">'+usedCats().map(c=>`<button class="ctile" data-cat="${c.id}" data-view="home"><span class="ci" style="background:${c.bg}">${c.e}</span>${esc(c.n)}<small>${catItems(c.id).length} items</small></button>`).join('')+'</div>';
+  }else if(S.view==='again'){
+    const seen=new Map();hist.slice().reverse().forEach(o=>o.items.forEach(x=>{if(!seen.has(x.id)&&byId.has(x.id))seen.set(x.id,byId.get(x.id))}));
+    const l=[...seen.values()];
+    h=l.length?`<section class="sec"><div class="sh"><h2>🔁 Dobara kharidein</h2></div><div class="grid">${l.map(cardHTML).join('')}</div></section>`:'<div class="empty"><b>🧺</b>Abhi koi purana order nahi hai.<br>Pehla order karte hi saman yahan dikhega.</div>';
+  }else if(S.cat==='all'){
+    h=(isLive?'':'<div class="note">⏳ Dukaan ka stock aur daam abhi update ho rahe hain. Thodi der baad dobara dekhein — tab tak saman ki list dekh sakte hain.</div>');
+    h+='<div class="banners" id="bn">'+BANNERS.map(b=>`<button class="bn" style="background:${b.g}" data-cat="${b.c}"><b>${esc(b.t)}</b><span>${esc(b.s)}</span><em>${b.e}</em></button>`).join('')+'</div>';
+    usedCats().forEach(c=>{h+=sec(c,catItems(c.id).slice(0,6),catItems(c.id).length>6)});
+  }else{
+    const c=CATMAP[S.cat];h=c?sec(c,catItems(c.id),false):'';
+  }
+  m.innerHTML=h;
+  document.querySelectorAll('#nav [data-view]').forEach(b=>b.classList.toggle('on',b.dataset.view===S.view&&!q));
+  bars();
+}
+function bars(){
+  const L=lines().filter(l=>l.ok);const n=L.reduce((a,l)=>a+l.q,0),t=L.reduce((a,l)=>a+l.q*l.p,0);
+  ['b1','b2'].forEach(i=>{const b=$('#'+i);b.textContent=n;b.classList.toggle('show',n>0)});
+  $('#cbar').classList.toggle('show',n>0);$('#cbn').textContent=n+(n===1?' item':' items');$('#cbt').textContent=inr(t)+' ›';
+}
+/* ---------- cart ---------- */
+function lines(){
+  return Object.values(cart).map(c=>{
+    const it=byId.get(c.id);const vi=it?it.v.findIndex(x=>x.u===c.u):-1;
+    const ok=!!(it&&it.s&&vi>=0);
+    return {c,it,vi,ok,p:ok?it.v[vi].p:0,q:c.q,u:c.u};
+  });
+}
+function setQty(id,vi,d){
+  const it=byId.get(id);if(!it||!it.v[vi])return;
+  const u=it.v[vi].u,k=ckey(id,u);const cur=cart[k]?cart[k].q:0;const q=Math.max(0,Math.min(99,cur+d));
+  if(q===0)delete cart[k];else cart[k]={id,u,q,name:it.name,hindi:it.hindi};
+  save('mittu_shop_cart',cart);repaint(id);bars();if($('#pCart').classList.contains('show'))renderCart();
+}
+function renderCart(){
+  const L=lines();const B=$('#cartBody');
+  if(!L.length){B.innerHTML='<div class="empty"><b>🛒</b>Cart khaali hai.<br>Saman chun kar ADD dabayein.</div><button class="btn ghost" data-back>Saman dekhein</button>';return}
+  let tot=0;
+  let h=L.map(l=>{
+    const name=l.it?l.it.name:l.c.name;const cat=CATMAP[(l.it&&l.it.cat)||'misc'];
+    const em=emojiFor(name,cat);const pic=l.it&&l.it.img?`<img src="${esc(l.it.img)}" alt="" onerror="this.replaceWith(document.createTextNode('${em}'))">`:em;
+    if(l.ok)tot+=l.p*l.q;
+    const key=esc(l.c.id),vi=l.vi;
+    return `<div class="line${l.ok?'':' bad'}"><div class="lp" style="background:${cat.bg}">${pic}</div><div class="li"><b>${esc(name)}</b><small>${esc(uLabel(l.u))}${l.ok?' · '+inr(l.p):''}</small>${l.ok?'':'<small style="color:#c0392b;display:block">Abhi available nahi</small>'}</div><div class="lr">${l.ok?`<div class="step"><button data-minus="${key}" data-vi="${vi}">−</button><span>${l.q}</span><button data-plus="${key}" data-vi="${vi}">+</button></div><div>${inr(l.p*l.q)}</div>`:`<button class="lnk" data-rm="${esc(ckey(l.c.id,l.u))}">Hatayein</button>`}</div></div>`;
+  }).join('');
+  h+=`<div class="tot"><span>Total</span><span>${inr(tot)}</span></div><button class="btn" id="goCo"${tot>0?'':' disabled'}>Aage badhein</button>`;
+  B.innerHTML=h;
+}
+function openPage(id){document.querySelectorAll('.page').forEach(p=>p.classList.remove('show'));if(id)$(id).classList.add('show');document.body.style.overflow=id?'hidden':''}
+function openCart(){renderCart();openPage('#pCart')}
+function openCo(){
+  const t=lines().filter(l=>l.ok).reduce((a,l)=>a+l.p*l.q,0);if(!t){toast('Cart mein saman chunein');return}
+  const p=load('mittu_shop_profile',{});$('#fName').value=p.name||'';$('#fPhone').value=p.phone||'';$('#fAddr').value=p.addr||'';
+  $('#coTot').textContent=inr(t);$('#coErr').textContent='';openPage('#pCo');
+}
+/* ---------- order ---------- */
+let FB=null;
+function newId(){return 'MS'+Date.now().toString(36).slice(-6).toUpperCase()+Math.random().toString(36).slice(2,4).toUpperCase()}
+async function placeOrder(){
+  const name=$('#fName').value.trim(),phone=$('#fPhone').value.replace(/\D/g,''),addr=$('#fAddr').value.trim(),note=$('#fNote').value.trim();
+  const pay=(document.querySelector('input[name=pay]:checked')||{}).value||'COD';const err=$('#coErr');
+  if(name.length<2){err.textContent='Apna naam likhein.';return}
+  if(!/^[6-9]\d{9}$/.test(phone)){err.textContent='Sahi 10 digit mobile number likhein.';return}
+  if(addr.length<8){err.textContent='Pura pata likhein (gaon / mohalla / landmark).';return}
+  const L=lines().filter(l=>l.ok);if(!L.length){err.textContent='Cart khaali hai.';return}
+  const total=Math.round(L.reduce((a,l)=>a+l.p*l.q,0)*100)/100;
+  const order={id:newId(),name,phone,address:addr,note,pay,items:L.map(l=>({id:l.it.id,name:l.it.name,hindi:l.it.hindi||'',unit:l.u,price:l.p,qty:l.q,total:Math.round(l.p*l.q*100)/100})),total,status:'new',ts:Date.now(),src:'shop'};
+  const btn=$('#placeBtn');btn.disabled=true;btn.textContent='Bhej rahe hain…';err.textContent='';
+  try{
+    if(!FB)throw new Error('offline');
+    await Promise.race([FB.set(FB.push(FB.ref(FB.db,'shopOrders')),order),new Promise((_,r)=>setTimeout(()=>r(new Error('timeout')),15000))]);
+    save('mittu_shop_profile',{name,phone,addr});
+    hist.push({id:order.id,ts:order.ts,total,items:order.items.map(i=>({id:i.id,name:i.name}))});hist=hist.slice(-30);save('mittu_shop_orders',hist);
+    cart={};save('mittu_shop_cart',cart);$('#okId').textContent='Order no: '+order.id;
+    openPage('#pOk');render();
+  }catch(e){err.textContent='Order nahi ja paya. Internet check karke dobara koshish karein.'}
+  btn.disabled=false;btn.textContent='Order Karein';
+}
+/* ---------- events ---------- */
+document.addEventListener('click',e=>{
+  const t=e.target.closest('button,[data-go],[data-cat]');if(!t)return;
+  if(t.dataset.add!==undefined){setQty(t.dataset.add,+t.dataset.vi,1);return}
+  if(t.dataset.plus!==undefined){setQty(t.dataset.plus,+t.dataset.vi,1);return}
+  if(t.dataset.minus!==undefined){setQty(t.dataset.minus,+t.dataset.vi,-1);return}
+  if(t.dataset.rm!==undefined){delete cart[t.dataset.rm];save('mittu_shop_cart',cart);renderCart();bars();return}
+  if(t.dataset.go==='cart'){openCart();return}
+  if(t.dataset.back!==undefined){if(t.dataset.back==='cart')openCart();else openPage(null);return}
+  if(t.id==='goCo'){openCo();return}
+  if(t.id==='placeBtn'){placeOrder();return}
+  if(t.id==='okBtn'){openPage(null);S={view:'home',cat:'all',q:''};$('#q').value='';render();window.scrollTo(0,0);return}
+  if(t.dataset.cat!==undefined){S.cat=t.dataset.cat;S.view=t.dataset.view||'home';S.q='';$('#q').value='';render();window.scrollTo(0,0);return}
+  if(t.dataset.view&&t.closest('#nav')){S.view=t.dataset.view;S.cat='all';S.q='';$('#q').value='';render();window.scrollTo(0,0);return}
+});
+document.addEventListener('change',e=>{const s=e.target.closest('[data-vsel]');if(s){sel[s.dataset.vsel]=+s.value;repaint(s.dataset.vsel)}});
+let qT;$('#q').addEventListener('input',e=>{clearTimeout(qT);qT=setTimeout(()=>{S.q=e.target.value;render()},180)});
+setInterval(()=>{const b=$('#bn');if(!b||document.hidden)return;const w=b.firstElementChild?b.firstElementChild.offsetWidth+10:0;if(!w)return;b.scrollTo({left:(b.scrollLeft+w>b.scrollWidth-w/2)?0:b.scrollLeft+w,behavior:'smooth'})},4500);
+/* ---------- Firebase (live stock) ---------- */
+function setLiveUI(on){const l=$('#live');l.classList.toggle('on',on);l.querySelector('span').textContent=on?'Live daam · dukaan ke stock se':'Offline — pichhle daam dikh rahe hain'}
+async function initFB(){
+  try{
+    const A=await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js');
+    const D=await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js');
+    const app=A.initializeApp({apiKey:"AIzaSyDQ-fm6-_bs728n6rcUS-XS9Zl-hqbIQhA",authDomain:"mittu-billing.firebaseapp.com",databaseURL:"https://mittu-billing-default-rtdb.firebaseio.com",projectId:"mittu-billing",storageBucket:"mittu-billing.firebasestorage.app",messagingSenderId:"9778174452",appId:"1:9778174452:web:99b40c599546a5560541a1"});
+    const db=D.getDatabase(app);FB={db,ref:D.ref,set:D.set,push:D.push};
+    D.onValue(D.ref(db,'.info/connected'),s=>setLiveUI(!!s.val()));
+    D.onValue(D.ref(db,'publicShop/stock'),s=>{liveRaw=s.val();save('mittu_shop_live',liveRaw);rebuild();render()},()=>{setLiveUI(false)});
+  }catch(e){setLiveUI(false)}
+}
+rebuild();render();setLiveUI(false);initFB();
+})();
+</script>
+</body>
+</html>

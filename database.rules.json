@@ -1,0 +1,15 @@
+{
+  "rules": {
+    "publicShop": {
+      ".read": true,
+      ".write": "auth != null"
+    },
+    "shopOrders": {
+      ".read": "auth != null",
+      "$id": {
+        ".write": "auth != null || (!data.exists() && newData.exists())",
+        ".validate": "newData.hasChildren(['id','name','phone','address','items','total','ts']) && newData.child('name').isString() && newData.child('name').val().length <= 60 && newData.child('phone').isString() && newData.child('phone').val().length == 10 && newData.child('address').val().length <= 250 && newData.child('total').isNumber()"
+      }
+    }
+  }
+}
