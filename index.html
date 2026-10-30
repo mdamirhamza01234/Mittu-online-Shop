@@ -412,7 +412,7 @@ async function initFB(){
     const app=A.initializeApp({apiKey:"AIzaSyDQ-fm6-_bs728n6rcUS-XS9Zl-hqbIQhA",authDomain:"mittu-billing.firebaseapp.com",databaseURL:"https://mittu-billing-default-rtdb.firebaseio.com",projectId:"mittu-billing",storageBucket:"mittu-billing.firebasestorage.app",messagingSenderId:"9778174452",appId:"1:9778174452:web:99b40c599546a5560541a1"});
     const db=D.getDatabase(app);FB={db,ref:D.ref,set:D.set,push:D.push};
     D.onValue(D.ref(db,'.info/connected'),s=>setLiveUI(!!s.val()));
-    D.onValue(D.ref(db,'publicShop/stock'),s=>{liveRaw=s.val();save('mittu_shop_live',liveRaw);rebuild();render()},()=>{setLiveUI(false)});
+    D.onValue(D.ref(db,'publicShop/stock'),s=>{liveRaw=s.val();save('mittu_shop_live',liveRaw);rebuild();render();if(!s.exists())$('#live span').textContent='Dukaan ne abhi daam nahi bheje'},e=>{setLiveUI(false);$('#live span').textContent='Daam nahi aa pa rahe ('+((e&&e.code)||'error')+')'});
   }catch(e){setLiveUI(false)}
 }
 rebuild();render();setLiveUI(false);initFB();
