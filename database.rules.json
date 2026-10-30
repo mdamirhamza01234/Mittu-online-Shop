@@ -1,14 +1,32 @@
 {
   "rules": {
-    "publicShop": {
-      ".read": true,
+    "users": {
+      "$uid": {
+        ".read": "$uid === auth.uid",
+        ".write": "$uid === auth.uid"
+      }
+    },
+    "currentBill": {
+      ".read": "auth != null",
       ".write": "auth != null"
     },
-    "shopOrders": {
+    "customerRequest": {
       ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "staffOrders": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "publicShop": {
+      ".read": true,
+      ".write": "auth != null && auth.token.email === 'mda15052006@gmail.com' && auth.token.email_verified === true"
+    },
+    "shopOrders": {
+      ".read": "auth != null && auth.token.email === 'mda15052006@gmail.com' && auth.token.email_verified === true",
       "$id": {
-        ".write": "auth != null || (!data.exists() && newData.exists())",
-        ".validate": "newData.hasChildren(['id','name','phone','address','items','total','ts']) && newData.child('name').isString() && newData.child('name').val().length <= 60 && newData.child('phone').isString() && newData.child('phone').val().length == 10 && newData.child('address').val().length <= 250 && newData.child('total').isNumber()"
+        ".write": "!data.exists() && newData.exists()",
+        ".validate": "newData.hasChildren(['id','name','phone','address','items','total','ts']) && newData.child('id').isString() && newData.child('name').isString() && newData.child('name').val().length <= 60 && newData.child('phone').isString() && newData.child('phone').val().length == 10 && newData.child('address').isString() && newData.child('address').val().length <= 250 && newData.child('total').isNumber()"
       }
     }
   }
