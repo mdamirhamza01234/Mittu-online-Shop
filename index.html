@@ -114,6 +114,7 @@ select.chip{appearance:none;-webkit-appearance:none;outline:0;font-weight:700;co
 .upibox{display:flex;justify-content:space-between;align-items:center;gap:10px;border:1.5px dashed #0a5db0;background:#eef5fd;border-radius:14px;padding:12px 14px}
 .upiid{font-size:19px;font-weight:800;letter-spacing:.3px;word-break:break-all}.upinm{font-size:12px;color:var(--mut);margin-top:2px}
 .copy{background:#0a5db0;color:#fff;border-radius:10px;padding:9px 16px;font-weight:800;font-size:14px;flex:none}
+.payer{font-size:13.5px;margin-bottom:10px;color:var(--ink)}.qract{display:flex;gap:10px;margin-top:10px}.qract .qb{margin:0;justify-content:center;font-size:14.5px;padding:12px 8px;gap:6px}
 .paynote{font-size:12.5px;color:var(--mut);margin-top:8px;line-height:1.4}
 .appbtn{display:flex;align-items:center;gap:14px;width:100%;text-align:left;border:1.5px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:10px;font-weight:700;font-size:16px;background:#fff}
 .appbtn .ai{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:18px;flex:none}
@@ -187,6 +188,7 @@ body:has(.page.show)::before{content:'';position:fixed;inset:0;background:rgba(0
     <label for="fNote">Dukaandar ke liye note (optional)</label><input id="fNote" maxlength="120">
     <label>Payment</label>
     <div class="pay"><label><input type="radio" name="pay" value="COD" checked> Cash on delivery</label><label><input type="radio" name="pay" value="UPI"> UPI (delivery par)</label><label class="payon"><input type="radio" name="pay" value="ONLINE"> 💳 Online payment (abhi pay karein)</label></div>
+    <div id="upiWrap" style="display:none"><label for="fUpi">Aapki UPI ID (optional) — jaise name@okaxis</label><input id="fUpi" autocapitalize="off" autocomplete="off" spellcheck="false" maxlength="60" placeholder="aapki-upi-id@bank"></div>
   </div>
   <div class="err" id="coErr"></div>
   <div class="tot"><span>Total</span><span id="coTot">₹0</span></div>
@@ -195,16 +197,18 @@ body:has(.page.show)::before{content:'';position:fixed;inset:0;background:rgba(0
 <div class="page" id="pPay">
   <div class="ph"><button data-back aria-label="Back" id="payBack">←</button><h2>Online Payment</h2></div>
   <div class="payamt"><small>Order <b id="payOid"></b> · Pay karna hai</small><div id="payAmt">₹0</div></div>
-  <div class="paysec"><div class="paylbl">1. UPI ID se pay karein</div>
+  <div class="paysec"><div class="paylbl">1. Apne UPI app se pay karein</div>
+    <div class="payer" id="payerRow" style="display:none">Aapki UPI ID: <b id="payerUpi"></b></div>
+    <button class="btn" id="payAnyBtn" style="width:100%;margin:0 0 12px">Pay ₹0</button>
     <div class="upibox"><div><div class="upiid" id="upiId">7303714309@axl</div><div class="upinm">MITTU WHOLESALER &amp; RETAILER</div></div><button class="copy" id="copyUpi">Copy</button></div>
-    <div class="paynote">Kisi bhi UPI app mein ye ID daalkar upar likha amount bhejein. Note mein order number likhein.</div></div>
+    <div class="paynote">Upar wale button se aapka UPI app amount ke saath khulega. Ya dukaan ki UPI ID copy karke kisi bhi app se amount bhejein. Note mein order number likhein.</div></div>
   <div class="paysec"><div class="paylbl">2. UPI app se seedha pay karein</div>
     <button class="appbtn" data-upiapp="phonepe"><span class="ai" style="background:#5f259f">पे</span>PhonePe<span class="go">›</span></button>
     <button class="appbtn" data-upiapp="gpay"><span class="ai" style="background:#fff;border:1px solid #ddd;color:#4285f4">G</span>Google Pay<span class="go">›</span></button>
     <button class="appbtn" data-upiapp="paytm"><span class="ai" style="background:#00b9f1;font-size:11px">Paytm</span>Paytm<span class="go">›</span></button></div>
   <div class="paysec"><div class="paylbl">3. QR Code se pay karein</div>
     <button class="appbtn" id="qrBtn"><span class="ai" style="background:#e8f1f8;color:#0a5db0">▦</span>Pay via QR Code<span class="go">›</span></button>
-    <div id="qrBox" style="display:none"><div class="qrwrap"><div id="qrCanvas"></div></div><div class="paynote" style="text-align:center">Kisi bhi UPI app se scan karke pay karein.</div></div></div>
+    <div id="qrBox" style="display:none"><div class="qrwrap"><div id="qrCanvas"></div></div><div class="paynote" style="text-align:center">Kisi bhi UPI app se scan karke pay karein.</div><div class="qract"><button class="appbtn qb" id="qrShare">📤 Share QR</button><button class="appbtn qb" id="qrDl">⬇️ Download QR</button></div></div></div>
   <button class="btn" id="paidBtn">Maine pay kar diya</button>
   <button class="btn ghost" id="laterBtn">Baad mein pay karunga</button>
   <div class="paynote" style="margin:6px 18px 0;text-align:center">Payment dukaan ke UPI account mein aata hai. Dukaan aapka payment check karke order confirm karega.</div>
@@ -400,9 +404,10 @@ async function placeOrder(){
   if(!/^[6-9]\d{9}$/.test(phone)){err.textContent='Sahi 10 digit mobile number likhein.';return}
   if(addr.length<8){err.textContent='Pura pata likhein (gaon / mohalla / landmark).';return}
   const L=lines().filter(l=>l.ok);if(!L.length){err.textContent='Cart khaali hai.';return}
+  if(pay==='ONLINE'){const pu=($('#fUpi').value||'').trim();if(pu&&!/^[A-Za-z0-9._-]{2,}@[A-Za-z][A-Za-z0-9]{1,}$/.test(pu)){err.textContent='UPI ID sahi likhein (jaise name@okaxis) ya khali chhod dein.';return}}
   const total=Math.round(L.reduce((a,l)=>a+l.p*l.q,0)*100)/100;
   const order={id:newId(),name,phone,address:addr,note,pay,items:L.map(l=>({id:l.it.id,name:l.it.name,hindi:l.it.hindi||'',unit:l.u,price:l.p,qty:l.q,total:Math.round(l.p*l.q*100)/100})),total,status:'new',ts:Date.now(),src:'shop'};
-  if(pay==='ONLINE')order.payStatus='pending';
+  if(pay==='ONLINE'){order.payStatus='pending';const pu=($('#fUpi').value||'').trim();if(pu)order.payerUpi=pu}
   const btn=$('#placeBtn');btn.disabled=true;btn.textContent='Bhej rahe hain…';err.textContent='';
   try{
     if(!FB)throw new Error('offline');
@@ -429,6 +434,8 @@ function upiUrl(app){
 }
 function openPay(order){
   payCtx={id:order.id,total:order.total};
+  $('#payAnyBtn').textContent='Pay '+inr(order.total)+' (UPI app khulega)';
+  $('#payerRow').style.display=order.payerUpi?'block':'none';$('#payerUpi').textContent=order.payerUpi||'';
   $('#payOid').textContent=order.id;$('#payAmt').textContent=inr(order.total);$('#upiId').textContent=UPI_ID;
   $('#qrBox').style.display='none';$('#qrCanvas').innerHTML='';
   openPage('#pPay');
@@ -444,6 +451,34 @@ function copyUpi(){
   if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(UPI_ID).then(done,()=>fallbackCopy(done))}else fallbackCopy(done);
 }
 function fallbackCopy(done){try{const r=document.createRange();r.selectNodeContents($('#upiId'));const s=getSelection();s.removeAllRanges();s.addRange(r);document.execCommand('copy');done()}catch(e){toast('UPI ID: '+UPI_ID)}}
+function payAny(){window.location.href='upi://pay?'+upiQuery();setTimeout(()=>{if(!document.hidden)toast('UPI app nahi khula? Dukaan ki UPI ID ya QR se pay karein.')},2200)}
+function qrCanvasEl(){return document.querySelector('#qrCanvas canvas')}
+function qrCardCanvas(){
+  const src=qrCanvasEl();if(!src)return null;
+  const W=520,H=700,c=document.createElement('canvas');c.width=W;c.height=H;const x=c.getContext('2d');
+  x.fillStyle='#fff';x.fillRect(0,0,W,H);x.fillStyle='#0a5db0';x.fillRect(0,0,W,86);
+  x.fillStyle='#fff';x.textAlign='center';x.font='bold 28px sans-serif';x.fillText('MITTU WHOLESALER & RETAILER',W/2,40);x.font='20px sans-serif';x.fillText('Scan karke UPI se pay karein',W/2,68);
+  x.fillStyle='#111';x.font='bold 54px sans-serif';x.fillText('\u20B9'+Number(payCtx.total).toFixed(2),W/2,170);
+  x.imageSmoothingEnabled=false;x.drawImage(src,(W-340)/2,200,340,340);
+  x.fillStyle='#333';x.font='bold 24px sans-serif';x.fillText(UPI_ID,W/2,590);
+  x.fillStyle='#666';x.font='20px sans-serif';x.fillText('Order '+payCtx.id,W/2,628);x.fillText('PhonePe / Google Pay / Paytm / koi bhi UPI app',W/2,664);
+  return c;
+}
+function qrDownload(){
+  const c=qrCardCanvas();if(!c){toast('Pehle QR dikhayein');return}
+  const a=document.createElement('a');a.href=c.toDataURL('image/png');a.download='Mittu-Pay-'+payCtx.id+'.png';document.body.appendChild(a);a.click();a.remove();toast('QR download ho gaya');
+}
+async function qrShare(){
+  const c=qrCardCanvas();if(!c){toast('Pehle QR dikhayein');return}
+  const text='Mittu Wholesaler ko '+inr(payCtx.total)+' pay karein (Order '+payCtx.id+'). UPI ID: '+UPI_ID;
+  try{
+    const blob=await new Promise(r=>c.toBlob(r,'image/png'));
+    const f=new File([blob],'Mittu-Pay-'+payCtx.id+'.png',{type:'image/png'});
+    if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f],title:'Mittu Pay QR',text});return}
+    if(navigator.share){await navigator.share({title:'Mittu Pay QR',text});return}
+  }catch(e){if(e&&e.name==='AbortError')return}
+  qrDownload();
+}
 function payAppOpen(app){
   window.location.href=upiUrl(app);
   setTimeout(()=>{if(!document.hidden)toast('App nahi khula? UPI ID ya QR se pay karein.')},2200);
@@ -466,13 +501,16 @@ document.addEventListener('click',e=>{
   if(t.dataset.upiapp){payAppOpen(t.dataset.upiapp);return}
   if(t.id==='qrBtn'){showQR();return}
   if(t.id==='copyUpi'){copyUpi();return}
+  if(t.id==='payAnyBtn'){payAny();return}
+  if(t.id==='qrDl'){qrDownload();return}
+  if(t.id==='qrShare'){qrShare();return}
   if(t.id==='paidBtn'){showOk('Dukaan aapka payment check karke order confirm karega. Zarurat par aapko call aayega.');return}
   if(t.id==='laterBtn'){showOk('Order mil gaya hai. Payment dukaan ko UPI se ya delivery par kar dein.');return}
   if(t.id==='okBtn'){openPage(null);S={view:'home',cat:'all',q:''};$('#q').value='';render();window.scrollTo(0,0);return}
   if(t.dataset.cat!==undefined){S.cat=t.dataset.cat;S.view=t.dataset.view||'home';S.q='';$('#q').value='';render();window.scrollTo(0,0);return}
   if(t.dataset.view&&t.closest('#nav')){S.view=t.dataset.view;S.cat='all';S.q='';$('#q').value='';render();window.scrollTo(0,0);return}
 });
-document.addEventListener('change',e=>{if(e.target.name==='pay')$('#placeBtn').textContent=e.target.value==='ONLINE'?'Order Karein aur Pay Karein':'Order Karein';const s=e.target.closest('[data-vsel]');if(s){sel[s.dataset.vsel]=+s.value;repaint(s.dataset.vsel)}});
+document.addEventListener('change',e=>{if(e.target.name==='pay'){$('#upiWrap').style.display=e.target.value==='ONLINE'?'block':'none'}if(e.target.name==='pay')$('#placeBtn').textContent=e.target.value==='ONLINE'?'Order Karein aur Pay Karein':'Order Karein';const s=e.target.closest('[data-vsel]');if(s){sel[s.dataset.vsel]=+s.value;repaint(s.dataset.vsel)}});
 let qT;$('#q').addEventListener('input',e=>{clearTimeout(qT);qT=setTimeout(()=>{S.q=e.target.value;render()},180)});
 setInterval(()=>{const b=$('#bn');if(!b||document.hidden)return;const w=b.firstElementChild?b.firstElementChild.offsetWidth+10:0;if(!w)return;b.scrollTo({left:(b.scrollLeft+w>b.scrollWidth-w/2)?0:b.scrollLeft+w,behavior:'smooth'})},4500);
 /* ---------- Firebase (live stock) ---------- */
