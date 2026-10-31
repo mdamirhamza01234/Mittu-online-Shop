@@ -101,7 +101,7 @@ select.chip{appearance:none;-webkit-appearance:none;outline:0;font-weight:700;co
 .form label{display:block;font-size:13px;color:var(--mut);margin:14px 0 5px;font-weight:600}
 .form input,.form textarea{width:100%;border:1.5px solid #d6d2dc;border-radius:12px;padding:12px;font:inherit;font-size:16px;outline:0;background:#fff}
 .form input:focus,.form textarea:focus{border-color:var(--blue)}
-.pay{display:flex;gap:10px;margin-top:4px}
+.pay{display:flex;gap:10px;margin-top:4px;flex-wrap:wrap}.pay .payon{flex:1 1 100%;border-color:#0a5db0;background:#eef5fd;font-weight:700}
 .pay label{flex:1;margin:0;border:1.5px solid #d6d2dc;border-radius:12px;padding:12px;display:flex;gap:8px;align-items:center;color:var(--ink);font-size:14px}
 .pay input{width:auto}
 .err{color:var(--red);font-size:13px;margin:10px 16px 0;min-height:18px}
@@ -109,6 +109,16 @@ select.chip{appearance:none;-webkit-appearance:none;outline:0;font-weight:700;co
 .ok .tick{width:84px;height:84px;border-radius:50%;background:var(--green);color:#fff;font-size:48px;display:flex;align-items:center;justify-content:center;margin:0 auto 18px}
 .ok h2{margin:0 0 8px}
 .ok .oid{display:inline-block;margin:12px 0;background:var(--bg);border-radius:10px;padding:8px 16px;font-weight:800;letter-spacing:1px}
+.payamt{background:linear-gradient(135deg,#0a5db0,#2f86e0);color:#fff;padding:18px 20px}.payamt small{opacity:.9;font-size:13px}.payamt div{font-size:38px;font-weight:800;margin-top:2px}
+.paysec{padding:14px 16px 4px}.paylbl{font-weight:800;font-size:15px;margin-bottom:10px}
+.upibox{display:flex;justify-content:space-between;align-items:center;gap:10px;border:1.5px dashed #0a5db0;background:#eef5fd;border-radius:14px;padding:12px 14px}
+.upiid{font-size:19px;font-weight:800;letter-spacing:.3px;word-break:break-all}.upinm{font-size:12px;color:var(--mut);margin-top:2px}
+.copy{background:#0a5db0;color:#fff;border-radius:10px;padding:9px 16px;font-weight:800;font-size:14px;flex:none}
+.paynote{font-size:12.5px;color:var(--mut);margin-top:8px;line-height:1.4}
+.appbtn{display:flex;align-items:center;gap:14px;width:100%;text-align:left;border:1.5px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:10px;font-weight:700;font-size:16px;background:#fff}
+.appbtn .ai{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:18px;flex:none}
+.appbtn .go{margin-left:auto;color:var(--mut);font-size:22px}
+.qrwrap{display:flex;justify-content:center;padding:14px;background:#fff;border:1px solid var(--line);border-radius:16px;margin-top:4px}#qrCanvas{width:240px;height:240px;display:flex;align-items:center;justify-content:center}#qrCanvas img,#qrCanvas canvas{max-width:100%}
 .toast{position:fixed;left:50%;bottom:150px;transform:translateX(-50%);background:#222;color:#fff;padding:10px 16px;border-radius:22px;font-size:13.5px;z-index:99;opacity:0;pointer-events:none;transition:opacity .2s;max-width:90%;text-align:center}
 .toast.show{opacity:1}
 .foot{text-align:center;color:var(--mut);font-size:12px;padding:28px 16px 6px}
@@ -176,16 +186,33 @@ body:has(.page.show)::before{content:'';position:fixed;inset:0;background:rgba(0
     <label for="fAddr">Pura pata (gaon / mohalla / landmark)</label><textarea id="fAddr" rows="3" maxlength="250" autocomplete="street-address"></textarea>
     <label for="fNote">Dukaandar ke liye note (optional)</label><input id="fNote" maxlength="120">
     <label>Payment</label>
-    <div class="pay"><label><input type="radio" name="pay" value="COD" checked> Cash on delivery</label><label><input type="radio" name="pay" value="UPI"> UPI (delivery par)</label></div>
+    <div class="pay"><label><input type="radio" name="pay" value="COD" checked> Cash on delivery</label><label><input type="radio" name="pay" value="UPI"> UPI (delivery par)</label><label class="payon"><input type="radio" name="pay" value="ONLINE"> 💳 Online payment (abhi pay karein)</label></div>
   </div>
   <div class="err" id="coErr"></div>
   <div class="tot"><span>Total</span><span id="coTot">₹0</span></div>
   <button class="btn" id="placeBtn">Order Karein</button>
 </div>
+<div class="page" id="pPay">
+  <div class="ph"><button data-back aria-label="Back" id="payBack">←</button><h2>Online Payment</h2></div>
+  <div class="payamt"><small>Order <b id="payOid"></b> · Pay karna hai</small><div id="payAmt">₹0</div></div>
+  <div class="paysec"><div class="paylbl">1. UPI ID se pay karein</div>
+    <div class="upibox"><div><div class="upiid" id="upiId">7303714309@axl</div><div class="upinm">MITTU WHOLESALER &amp; RETAILER</div></div><button class="copy" id="copyUpi">Copy</button></div>
+    <div class="paynote">Kisi bhi UPI app mein ye ID daalkar upar likha amount bhejein. Note mein order number likhein.</div></div>
+  <div class="paysec"><div class="paylbl">2. UPI app se seedha pay karein</div>
+    <button class="appbtn" data-upiapp="phonepe"><span class="ai" style="background:#5f259f">पे</span>PhonePe<span class="go">›</span></button>
+    <button class="appbtn" data-upiapp="gpay"><span class="ai" style="background:#fff;border:1px solid #ddd;color:#4285f4">G</span>Google Pay<span class="go">›</span></button>
+    <button class="appbtn" data-upiapp="paytm"><span class="ai" style="background:#00b9f1;font-size:11px">Paytm</span>Paytm<span class="go">›</span></button></div>
+  <div class="paysec"><div class="paylbl">3. QR Code se pay karein</div>
+    <button class="appbtn" id="qrBtn"><span class="ai" style="background:#e8f1f8;color:#0a5db0">▦</span>Pay via QR Code<span class="go">›</span></button>
+    <div id="qrBox" style="display:none"><div class="qrwrap"><div id="qrCanvas"></div></div><div class="paynote" style="text-align:center">Kisi bhi UPI app se scan karke pay karein.</div></div></div>
+  <button class="btn" id="paidBtn">Maine pay kar diya</button>
+  <button class="btn ghost" id="laterBtn">Baad mein pay karunga</button>
+  <div class="paynote" style="margin:6px 18px 0;text-align:center">Payment dukaan ke UPI account mein aata hai. Dukaan aapka payment check karke order confirm karega.</div>
+</div>
 <div class="page" id="pOk">
   <div class="ok"><div class="tick">✓</div><h2>Order mil gaya!</h2>
   <div>Aapka order dukaan tak pahunch gaya hai.</div><div class="oid" id="okId"></div>
-  <div style="color:var(--mut);font-size:14px">Dukaan se aapko confirmation call aayega.</div></div>
+  <div style="color:var(--mut);font-size:14px" id="okMsg">Dukaan se aapko confirmation call aayega.</div></div>
   <button class="btn" id="okBtn">Aur kharidari karein</button>
 </div>
 <div class="toast" id="toast"></div>
@@ -375,6 +402,7 @@ async function placeOrder(){
   const L=lines().filter(l=>l.ok);if(!L.length){err.textContent='Cart khaali hai.';return}
   const total=Math.round(L.reduce((a,l)=>a+l.p*l.q,0)*100)/100;
   const order={id:newId(),name,phone,address:addr,note,pay,items:L.map(l=>({id:l.it.id,name:l.it.name,hindi:l.it.hindi||'',unit:l.u,price:l.p,qty:l.q,total:Math.round(l.p*l.q*100)/100})),total,status:'new',ts:Date.now(),src:'shop'};
+  if(pay==='ONLINE')order.payStatus='pending';
   const btn=$('#placeBtn');btn.disabled=true;btn.textContent='Bhej rahe hain…';err.textContent='';
   try{
     if(!FB)throw new Error('offline');
@@ -382,9 +410,47 @@ async function placeOrder(){
     save('mittu_shop_profile',{name,phone,addr});
     hist.push({id:order.id,ts:order.ts,total,items:order.items.map(i=>({id:i.id,name:i.name}))});hist=hist.slice(-30);save('mittu_shop_orders',hist);
     cart={};save('mittu_shop_cart',cart);$('#okId').textContent='Order no: '+order.id;
-    openPage('#pOk');render();
+    render();
+    if(pay==='ONLINE')openPay(order);else showOk();
   }catch(e){err.textContent='Order nahi ja paya. Internet check karke dobara koshish karein.'}
-  btn.disabled=false;btn.textContent='Order Karein';
+  btn.disabled=false;btn.textContent=pay==='ONLINE'?'Order Karein aur Pay Karein':'Order Karein';
+}
+
+/* ---------- Online payment (UPI) ---------- */
+const UPI_ID='7303714309@axl',UPI_NAME='MITTU WHOLESALER & RETAILER';
+let payCtx=null;
+function upiQuery(){const o=payCtx||{};return 'pa='+UPI_ID+'&pn='+encodeURIComponent(UPI_NAME)+'&am='+Number(o.total||0).toFixed(2)+'&cu=INR&tn='+encodeURIComponent('Order '+(o.id||''))}
+function upiUrl(app){
+  const q=upiQuery(),ua=navigator.userAgent||'',and=/Android/i.test(ua),ios=/iPhone|iPad|iPod/i.test(ua);
+  const pk={phonepe:'com.phonepe.app',gpay:'com.google.android.apps.nbu.paisa.user',paytm:'net.one97.paytm'};
+  if(and)return 'intent://pay?'+q+'#Intent;scheme=upi;package='+pk[app]+';end';
+  if(ios)return ({phonepe:'phonepe://pay?',gpay:'gpay://upi/pay?',paytm:'paytmmp://pay?'})[app]+q;
+  return 'upi://pay?'+q;
+}
+function openPay(order){
+  payCtx={id:order.id,total:order.total};
+  $('#payOid').textContent=order.id;$('#payAmt').textContent=inr(order.total);$('#upiId').textContent=UPI_ID;
+  $('#qrBox').style.display='none';$('#qrCanvas').innerHTML='';
+  openPage('#pPay');
+}
+function loadQR(){return new Promise((res,rej)=>{if(window.QRCode)return res();const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';s.onload=()=>res();s.onerror=()=>rej(new Error('qr'));document.head.appendChild(s)})}
+async function showQR(){
+  const box=$('#qrBox');box.style.display='block';const c=$('#qrCanvas');c.textContent='QR ban raha hai…';
+  try{await loadQR();c.innerHTML='';new QRCode(c,{text:'upi://pay?'+upiQuery(),width:240,height:240,correctLevel:QRCode.CorrectLevel.M});box.scrollIntoView({behavior:'smooth',block:'center'})}
+  catch(e){c.textContent='QR load nahi hua. Internet check karein ya UPI ID se pay karein.'}
+}
+function copyUpi(){
+  const done=()=>toast('UPI ID copy ho gayi');
+  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(UPI_ID).then(done,()=>fallbackCopy(done))}else fallbackCopy(done);
+}
+function fallbackCopy(done){try{const r=document.createRange();r.selectNodeContents($('#upiId'));const s=getSelection();s.removeAllRanges();s.addRange(r);document.execCommand('copy');done()}catch(e){toast('UPI ID: '+UPI_ID)}}
+function payAppOpen(app){
+  window.location.href=upiUrl(app);
+  setTimeout(()=>{if(!document.hidden)toast('App nahi khula? UPI ID ya QR se pay karein.')},2200);
+}
+function showOk(msg){
+  $('#okMsg').textContent=msg||'Dukaan se aapko confirmation call aayega.';
+  openPage('#pOk');
 }
 /* ---------- events ---------- */
 document.addEventListener('click',e=>{
@@ -397,11 +463,16 @@ document.addEventListener('click',e=>{
   if(t.dataset.back!==undefined){if(t.dataset.back==='cart')openCart();else openPage(null);return}
   if(t.id==='goCo'){openCo();return}
   if(t.id==='placeBtn'){placeOrder();return}
+  if(t.dataset.upiapp){payAppOpen(t.dataset.upiapp);return}
+  if(t.id==='qrBtn'){showQR();return}
+  if(t.id==='copyUpi'){copyUpi();return}
+  if(t.id==='paidBtn'){showOk('Dukaan aapka payment check karke order confirm karega. Zarurat par aapko call aayega.');return}
+  if(t.id==='laterBtn'){showOk('Order mil gaya hai. Payment dukaan ko UPI se ya delivery par kar dein.');return}
   if(t.id==='okBtn'){openPage(null);S={view:'home',cat:'all',q:''};$('#q').value='';render();window.scrollTo(0,0);return}
   if(t.dataset.cat!==undefined){S.cat=t.dataset.cat;S.view=t.dataset.view||'home';S.q='';$('#q').value='';render();window.scrollTo(0,0);return}
   if(t.dataset.view&&t.closest('#nav')){S.view=t.dataset.view;S.cat='all';S.q='';$('#q').value='';render();window.scrollTo(0,0);return}
 });
-document.addEventListener('change',e=>{const s=e.target.closest('[data-vsel]');if(s){sel[s.dataset.vsel]=+s.value;repaint(s.dataset.vsel)}});
+document.addEventListener('change',e=>{if(e.target.name==='pay')$('#placeBtn').textContent=e.target.value==='ONLINE'?'Order Karein aur Pay Karein':'Order Karein';const s=e.target.closest('[data-vsel]');if(s){sel[s.dataset.vsel]=+s.value;repaint(s.dataset.vsel)}});
 let qT;$('#q').addEventListener('input',e=>{clearTimeout(qT);qT=setTimeout(()=>{S.q=e.target.value;render()},180)});
 setInterval(()=>{const b=$('#bn');if(!b||document.hidden)return;const w=b.firstElementChild?b.firstElementChild.offsetWidth+10:0;if(!w)return;b.scrollTo({left:(b.scrollLeft+w>b.scrollWidth-w/2)?0:b.scrollLeft+w,behavior:'smooth'})},4500);
 /* ---------- Firebase (live stock) ---------- */
