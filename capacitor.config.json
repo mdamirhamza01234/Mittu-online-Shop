@@ -1,0 +1,17 @@
+{
+  "appId": "com.mittu.onlineshop",
+  "appName": "Mittu Online Shop",
+  "webDir": "www",
+  "server": {
+    "url": "https://mdamirhamza01234.github.io/Mittu-online-Shop/",
+    "androidScheme": "https",
+    "allowNavigation": [
+      "mdamirhamza01234.github.io",
+      "*.firebaseio.com",
+      "*.firebasedatabase.app",
+      "*.googleapis.com",
+      "www.gstatic.com"
+    ]
+  },
+  "backgroundColor": "#e4bdf6"
+}

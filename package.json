@@ -1,0 +1,11 @@
+{
+  "name": "mittu-online-shop-app",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Mittu Online Shop - Capacitor Android wrapper",
+  "dependencies": {
+    "@capacitor/android": "^7.0.0",
+    "@capacitor/cli": "^7.0.0",
+    "@capacitor/core": "^7.0.0"
+  }
+}
