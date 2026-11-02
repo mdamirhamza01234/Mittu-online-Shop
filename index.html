@@ -327,7 +327,7 @@ function renderTabs(){
 }
 const BANNERS=[
  {t:'Poora Kirana, Ek Jagah',s:'Atta, dal, tel, masale — sab kuch mobile se order karein',e:'🛒',g:'linear-gradient(135deg,#7b3fe4,#d65db1)',i:'img/banner/b0.webp',c:'c0'},
- {t:'Dry Fruits & Mewa',s:'Badam, kaju, pista aur rozana ke masale',e:'🥜',g:'linear-gradient(135deg,#f08a24,#e2492d)',i:'img/banner/b1.webp',c:'c10'},
+ {t:'Dry Fruits & Mewa',s:'Badam, kaju, pista aur rozana ke masale',e:'🥜',g:'linear-gradient(135deg,#f08a24,#e2492d)',i:'img/banner/dry.jpg',ov:'linear-gradient(90deg,rgba(60,25,0,.82) 0%,rgba(60,25,0,.55) 45%,rgba(60,25,0,.05) 100%)',c:'c10'},
  {t:'Safai & Personal Care',s:'Sabun, shampoo, toothpaste aur ghar ki safai',e:'🧼',g:'linear-gradient(135deg,#0f9aa8,#2f6fd6)',i:'img/banner/b2.webp',c:'c13'}
 ];
 function sec(c,list,all){return `<section class="sec"><div class="sh"><h2>${c.e} ${esc(c.n)}</h2>${all?`<button class="lnk" data-cat="${c.id}">Sab dekhein ›</button>`:''}</div><div class="grid">${list.map(cardHTML).join('')}</div></section>`}
@@ -347,7 +347,7 @@ function render(){
     h=l.length?`<section class="sec"><div class="sh"><h2>🔁 Dobara kharidein</h2></div><div class="grid">${l.map(cardHTML).join('')}</div></section>`:'<div class="empty"><b>🧺</b>Abhi koi purana order nahi hai.<br>Pehla order karte hi saman yahan dikhega.</div>';
   }else if(S.cat==='all'){
     h=(isLive?'':'<div class="note">⏳ Dukaan ka stock aur daam abhi update ho rahe hain. Thodi der baad dobara dekhein — tab tak saman ki list dekh sakte hain.</div>');
-    h+='<div class="banners" id="bn">'+BANNERS.map(b=>`<button class="bn" style="background:url(${b.i}) right center/cover no-repeat,${b.g}" data-cat="${b.c}"><b>${esc(b.t)}</b><span>${esc(b.s)}</span></button>`).join('')+'</div>';
+    h+='<div class="banners" id="bn">'+BANNERS.map(b=>`<button class="bn" style="background:${b.ov?b.ov+',':''}url(${b.i}) ${b.ov?'center':'right center'}/cover no-repeat,${b.g}" data-cat="${b.c}"><b>${esc(b.t)}</b><span>${esc(b.s)}</span></button>`).join('')+'</div>';
     usedCats().forEach(c=>{h+=sec(c,catItems(c.id).slice(0,6),catItems(c.id).length>6)});
   }else{
     const c=CATMAP[S.cat];h=c?sec(c,catItems(c.id),false):'';
