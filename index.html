@@ -132,8 +132,8 @@ body{background:linear-gradient(180deg,#e4bdf6 0,#f6eefb 340px,#f6f4f8 100%)}
 .search{padding:12px 32px 10px;max-width:760px}
 .tabs{padding:2px 24px 0;justify-content:flex-start}
 .tab{font-size:14.5px;padding:8px 16px 10px}.tab .ti{width:42px;height:42px;font-size:26px}
-.banners{padding:20px 28px 8px;gap:18px;overflow:visible}
-.bn{flex:1 1 0;min-height:200px;padding:28px 32px;border-radius:20px}
+.banners{padding:20px 28px 8px;gap:18px;overflow-x:auto}
+.bn{flex:0 0 calc((100% - 36px)/3);min-height:200px;padding:28px 32px;border-radius:20px}
 .bn b{font-size:30px}.bn span{font-size:16px}.bn em{font-size:110px}
 .sec{padding:20px 28px 0}.sh h2{font-size:26px}
 .grid{grid-template-columns:repeat(6,minmax(0,1fr));gap:26px 18px}
@@ -326,9 +326,37 @@ function renderTabs(){
   $('#tabs').innerHTML=`<button class="tab${S.cat==='all'?' on':''}" data-cat="all"><span class="ti">🏠</span>Sab</button>`+cs.map(c=>`<button class="tab${S.cat===c.id?' on':''}" data-cat="${c.id}"><span class="ti">${c.e}</span>${esc(c.n)}</button>`).join('');
 }
 const BANNERS=[
- {t:'Poora Kirana, Ek Jagah',s:'Atta, dal, tel, masale — sab kuch mobile se order karein',e:'🛒',g:'linear-gradient(135deg,#7b3fe4,#d65db1)',i:'img/banner/b0.webp',c:'c0'},
- {t:'Dry Fruits & Mewa',s:'Badam, kaju, pista aur rozana ke masale',e:'🥜',g:'linear-gradient(135deg,#f08a24,#e2492d)',i:'img/banner/dry.jpg',ov:'linear-gradient(90deg,rgba(60,25,0,.82) 0%,rgba(60,25,0,.55) 45%,rgba(60,25,0,.05) 100%)',c:'c10'},
- {t:'Safai & Personal Care',s:'Sabun, shampoo, toothpaste aur ghar ki safai',e:'🧼',g:'linear-gradient(135deg,#0f9aa8,#2f6fd6)',i:'img/banner/b2.webp',c:'c13'}
+ {"t": "Dry Fruits & Mewa", "s": "Badam, kaju, pista aur rozana ke masale", "g": "linear-gradient(135deg,#f08a24,#e2492d)", "i": "img/banner/dry.jpg", "c": "c10", "ov": "linear-gradient(90deg,rgba(60,25,0,.82) 0%,rgba(60,25,0,.55) 45%,rgba(60,25,0,.05) 100%)"},
+ {"t": "Dal aur Dalhan", "s": "Arhar / Tur Dal, Masoor Dal, Kabuli Chana aur bahut kuch", "g": "linear-gradient(135deg,rgb(176, 58, 46),rgb(120, 36, 28))", "i": "img/banner/c1.webp", "c": "c1"},
+ {"t": "Anaaj, Atta aur Chawal", "s": "Gehun, Besan, Mota Chawal aur bahut kuch", "g": "linear-gradient(135deg,rgb(198, 49, 49),rgb(158, 84, 31))", "i": "img/banner/c0.webp", "c": "c0"},
+ {"t": "Sabut Masale", "s": "Haldi Gaanth, Dhaniya Sabut, Rai aur bahut kuch", "g": "linear-gradient(135deg,rgb(102, 198, 49),rgb(31, 158, 39))", "i": "img/banner/c2.webp", "c": "c2"},
+ {"t": "Packet Masale aur Cooking Essentials", "s": "Garam Masala, Chhole Masala, Biryani Masala aur bahut kuch", "g": "linear-gradient(135deg,rgb(49, 198, 119),rgb(31, 158, 143))", "i": "img/banner/c3.webp", "c": "c3"},
+ {"t": "Tel aur Ghee", "s": "Sarson Tel, Refined Soyabean Oil, Rice Bran Oil aur bahut kuch", "g": "linear-gradient(135deg,rgb(49, 155, 198),rgb(31, 68, 158))", "i": "img/banner/c4.webp", "c": "c4"},
+ {"t": "Cheeni, Gud aur Namak", "s": "Cheeni, Gud Bhelli, Khandsari aur bahut kuch", "g": "linear-gradient(135deg,rgb(66, 49, 198),rgb(98, 31, 158))", "i": "img/banner/c5.webp", "c": "c5"},
+ {"t": "Chai, Coffee aur Peya", "s": "Tata Tea Gold, Wagh Bakri Tea, Bru Coffee aur bahut kuch", "g": "linear-gradient(135deg,rgb(188, 49, 198),rgb(158, 31, 113))", "i": "img/banner/c6.webp", "c": "c6"},
+ {"t": "Biscuit aur Namkeen", "s": "Parle-G, Good Day, Milk Bikis aur bahut kuch", "g": "linear-gradient(135deg,rgb(198, 49, 86),rgb(158, 53, 31))", "i": "img/banner/c7.webp", "c": "c7"},
+ {"t": "Chocolate aur Toffee", "s": "Dairy Milk, KitKat, Eclairs Toffee aur bahut kuch", "g": "linear-gradient(135deg,rgb(198, 135, 49),rgb(158, 157, 31))", "i": "img/banner/c8.webp", "c": "c8"},
+ {"t": "Instant aur Packaged Khana", "s": "Maggi Noodles, Pasta, Oats aur bahut kuch", "g": "linear-gradient(135deg,rgb(139, 198, 49),rgb(54, 158, 31))", "i": "img/banner/c9.webp", "c": "c9"},
+ {"t": "Sauce, Achar aur Papad", "s": "Tomato Ketchup, Red Chilli Sauce, Mayonnaise aur bahut kuch", "g": "linear-gradient(135deg,rgb(49, 192, 198),rgb(31, 99, 158))", "i": "img/banner/c11.webp", "c": "c11"},
+ {"t": "Dairy, Ande aur Bread", "s": "Sudha Doodh, Lassi, Cheese Slice aur bahut kuch", "g": "linear-gradient(135deg,rgb(49, 70, 198),rgb(67, 31, 158))", "i": "img/banner/c12.webp", "c": "c12"},
+ {"t": "Safai ka Saman", "s": "Surf Excel, Ariel, Vim Liquid aur bahut kuch", "g": "linear-gradient(135deg,rgb(152, 49, 198),rgb(158, 31, 144))", "i": "img/banner/c13.webp", "c": "c13"},
+ {"t": "Sabun aur Nahane ka Saman", "s": "Lux Soap, Pears Soap, Cinthol Soap aur bahut kuch", "g": "linear-gradient(135deg,rgb(198, 49, 123),rgb(158, 31, 40))", "i": "img/banner/c14.webp", "c": "c14"},
+ {"t": "Baal aur Tel", "s": "Clinic Plus Shampoo, Pantene, Meera Shikakai aur bahut kuch", "g": "linear-gradient(135deg,rgb(198, 98, 49),rgb(158, 126, 31))", "i": "img/banner/c15.webp", "c": "c15"},
+ {"t": "Skin, Cosmetic aur Shringar", "s": "Glow & Lovely Cream, Boroline, Kajal aur bahut kuch", "g": "linear-gradient(135deg,rgb(176, 198, 49),rgb(85, 158, 31))", "i": "img/banner/c16.webp", "c": "c16"},
+ {"t": "Daant aur Shaving", "s": "Colgate Paste, Dabur Red Paste, Toothbrush aur bahut kuch", "g": "linear-gradient(135deg,rgb(53, 198, 49),rgb(31, 158, 81))", "i": "img/banner/c17.webp", "c": "c17"},
+ {"t": "Baby Care aur Hygiene", "s": "Diaper, Baby Powder, Cerelac aur bahut kuch", "g": "linear-gradient(135deg,rgb(49, 198, 168),rgb(31, 130, 158))", "i": "img/banner/c18.webp", "c": "c18"},
+ {"t": "Puja Samagri", "s": "Agarbatti, Roli / Kumkum, Ghee Batti aur bahut kuch", "g": "linear-gradient(135deg,rgb(49, 106, 198),rgb(36, 31, 158))", "i": "img/banner/c19.webp", "c": "c19"},
+ {"t": "Stationery aur School Saman", "s": "Copy / Notebook, Eraser, Colour Box aur bahut kuch", "g": "linear-gradient(135deg,rgb(115, 49, 198),rgb(140, 31, 158))", "i": "img/banner/c20.webp", "c": "c20"},
+ {"t": "Bartan aur Kitchen Saman", "s": "Steel Glass, Tawa, Belan aur bahut kuch", "g": "linear-gradient(135deg,rgb(198, 49, 159),rgb(158, 31, 71))", "i": "img/banner/c21.webp", "c": "c21"},
+ {"t": "Electrical, Hardware aur Mobile", "s": "LED Bulb, Plug, Insulation Tape aur bahut kuch", "g": "linear-gradient(135deg,rgb(198, 62, 49),rgb(158, 95, 31))", "i": "img/banner/c22.webp", "c": "c22"},
+ {"t": "Gramin aur Kheti Saman", "s": "Khurpi, Fawda, Boru / Jute Bag aur bahut kuch", "g": "linear-gradient(135deg,rgb(198, 184, 49),rgb(116, 158, 31))", "i": "img/banner/c23.webp", "c": "c23"},
+ {"t": "Dawa-Dukaan ke Roz ke Saman", "s": "Dettol Antiseptic, Bandage Roll, Amrutanjan Balm aur bahut kuch", "g": "linear-gradient(135deg,rgb(90, 198, 49),rgb(31, 158, 50))", "i": "img/banner/c24.webp", "c": "c24"},
+ {"t": "Sabzi aur Phal", "s": "Aloo, Lahsun, Hari Mirch aur bahut kuch", "g": "linear-gradient(135deg,rgb(49, 198, 131),rgb(31, 158, 154))", "i": "img/banner/c25.webp", "c": "c25"},
+ {"t": "Keet-Nashak aur Pest Control", "s": "Good Knight, All Out, Mortein aur bahut kuch", "g": "linear-gradient(135deg,rgb(49, 143, 198),rgb(31, 57, 158))", "i": "img/banner/c26.webp", "c": "c26"},
+ {"t": "Packing aur Wholesale Supplies", "s": "Polythene Carry Bag, Aluminium Foil, Dhaga aur bahut kuch", "g": "linear-gradient(135deg,rgb(78, 49, 198),rgb(109, 31, 158))", "i": "img/banner/c27.webp", "c": "c27"},
+ {"t": "Kapda aur Garments", "s": "Saree, Lehenga, Jeans aur bahut kuch", "g": "linear-gradient(135deg,rgb(198, 49, 196),rgb(158, 31, 102))", "i": "img/banner/c28.webp", "c": "c28"},
+ {"t": "Joota-Chappal", "s": "Gumboot, Kolhapuri Chappal, Sleeper aur bahut kuch", "g": "linear-gradient(135deg,rgb(198, 49, 73),rgb(158, 64, 31))", "i": "img/banner/c29.webp", "c": "c29"},
+ {"t": "Khilone aur Gift Items", "s": "Plastic Car Toy, Football, Tennis Ball aur bahut kuch", "g": "linear-gradient(135deg,rgb(198, 148, 49),rgb(147, 158, 31))", "i": "img/banner/c30.webp", "c": "c30"}
 ];
 function sec(c,list,all){return `<section class="sec"><div class="sh"><h2>${c.e} ${esc(c.n)}</h2>${all?`<button class="lnk" data-cat="${c.id}">Sab dekhein ›</button>`:''}</div><div class="grid">${list.map(cardHTML).join('')}</div></section>`}
 function render(){
