@@ -375,7 +375,7 @@ function render(){
     h=l.length?`<section class="sec"><div class="sh"><h2>🔁 Dobara kharidein</h2></div><div class="grid">${l.map(cardHTML).join('')}</div></section>`:'<div class="empty"><b>🧺</b>Abhi koi purana order nahi hai.<br>Pehla order karte hi saman yahan dikhega.</div>';
   }else if(S.cat==='all'){
     h=(isLive?'':'<div class="note">⏳ Dukaan ka stock aur daam abhi update ho rahe hain. Thodi der baad dobara dekhein — tab tak saman ki list dekh sakte hain.</div>');
-    h+='<div class="banners" id="bn">'+BANNERS.map(b=>`<button class="bn" style="background:${b.ov?b.ov+',':''}url(${b.i}) ${b.ov?'center':'right center'}/cover no-repeat,${b.g}" data-cat="${b.c}"><b>${esc(b.t)}</b><span>${esc(b.s)}</span></button>`).join('')+'</div>';
+    h+='<div class="banners" id="bn">'+BANNERS.map(b=>`<button class="bn" style="background:${b.ov||'linear-gradient(90deg,rgba(0,0,0,.34) 0%,rgba(0,0,0,.18) 40%,rgba(0,0,0,0) 62%)'},url(${b.i}) ${b.ov?'center':'right center'}/cover no-repeat,${b.g}" data-cat="${b.c}"><b>${esc(b.t)}</b><span>${esc(b.s)}</span></button>`).join('')+'</div>';
     usedCats().forEach(c=>{h+=sec(c,catItems(c.id).slice(0,6),catItems(c.id).length>6)});
   }else{
     const c=CATMAP[S.cat];h=c?sec(c,catItems(c.id),false):'';
