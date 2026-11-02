@@ -46,7 +46,7 @@ button{font:inherit;cursor:pointer;border:0;background:none;color:inherit}
 .card{position:relative;min-width:0}
 .card.off .pic{opacity:.55}
 .pic{position:relative;aspect-ratio:1/1;border-radius:12px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:clamp(40px,12vw,64px);overflow:hidden;padding-bottom:26px;text-align:center}
-.pic img{width:100%;height:100%;object-fit:contain;padding:6px}
+.pic img{width:100%;height:100%;object-fit:contain;padding:6px;mix-blend-mode:multiply}
 .strip{position:absolute;left:0;right:0;bottom:0;height:30px;background:#efeff2;display:flex;align-items:center;padding:0 6px}
 .chip{font-size:11px;color:#444;background:transparent;border:0;max-width:52%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:inherit;padding:0}
 select.chip{appearance:none;-webkit-appearance:none;outline:0;font-weight:700;color:#222;background:#fff;border-radius:8px;padding:2px 4px;max-width:56%}
@@ -265,6 +265,8 @@ let cart=load('mittu_shop_cart',{});
 let hist=load('mittu_shop_orders',[]);
 const sel={};
 let S={view:'home',cat:'all',q:''};
+const HAS_IMG=(n=>{const f=new Set();for(let i=1;i<=523;i++)f.add(i);for(let i=532;i<=559;i++)f.add(i);return f})();
+const imgFor=n=>HAS_IMG.has(n)?'img/'+n+'.webp':'';
 function rebuild(){
   const raw=liveRaw&&typeof liveRaw==='object'&&Object.keys(liveRaw).length?liveRaw:null;
   isLive=!!raw;
@@ -284,9 +286,9 @@ function rebuild(){
   live.forEach(it=>{
     const won=it.m&&take.get(it.m.c.n)===it;
     const ref=it.m?it.m.c:(it.fb?it.fb.c:null);
-    it.cat=ref?ref.cat:'c52';it.ord=ref?ref.n+(won?0:0.5):2000;it.basis='';items.push(it);
+    it.cat=ref?ref.cat:'c52';it.ord=ref?ref.n+(won?0:0.5):2000;it.basis='';if(!it.img&&it.m)it.img=imgFor(it.m.c.n);items.push(it);
   });
-  CATALOG.forEach(c=>{if(!take.has(c.n))items.push({id:'c'+c.n,name:c.name,hindi:'',v:[],s:true,img:'',cat:c.cat,ord:c.n,live:false,basis:c.basis})});
+  CATALOG.forEach(c=>{if(!take.has(c.n))items.push({id:'c'+c.n,name:c.name,hindi:'',v:[],s:true,img:imgFor(c.n),cat:c.cat,ord:c.n,live:false,basis:c.basis})});
   items.sort((a,b)=>(b.live-a.live)||(a.ord-b.ord)||a.name.localeCompare(b.name));
   byId=new Map(items.map(i=>[i.id,i]));
 }
