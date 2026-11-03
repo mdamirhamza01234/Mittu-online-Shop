@@ -1,0 +1,39 @@
+name: Deploy to InfinityFree (FTP)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'index.html'
+      - 'img/**'
+      - '.github/workflows/deploy-infinityfree.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-infinityfree
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Sirf website ki files ek folder mein jama karte hain (APK/Android files upload nahi hongi)
+      - name: Prepare site files
+        run: |
+          mkdir -p _site
+          cp index.html _site/
+          cp -r img _site/img
+
+      - name: Upload via FTP to /htdocs/
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          protocol: ftp
+          port: 21
+          local-dir: ./_site/
+          server-dir: /htdocs/
+          state-name: .ftp-deploy-sync-state.json
