@@ -163,27 +163,27 @@ body:has(.page.show)::before{content:'';position:fixed;inset:0;background:rgba(0
 .bstat.err{background:#fdecea;color:#b3261e}
 .bstat.ok{background:#e8f6ed;color:#17703a}
 .bstat small{display:block;margin-top:4px;opacity:.85}
-.bwrap{padding:0 16px}
-.brow{border:1px solid var(--line);border-radius:14px;padding:10px;margin:10px 0;background:#fff}
-.bh{display:flex;align-items:center;gap:8px}
-.bsl{width:26px;height:26px;border-radius:50%;background:var(--lav);font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center;flex:none}
-.bname{position:relative;flex:1;min-width:0}
-.bname input{width:100%;height:42px;border:1.5px solid #d6d2dc;border-radius:10px;padding:0 10px;font:inherit;font-size:15.5px;outline:0;background:#fff}
-.bname input:focus{border-color:var(--blue)}
+.bwrap{padding:0 8px}
+.bhead,.brow{display:grid;grid-template-columns:14px minmax(0,1fr) 38px 99px 58px 16px;gap:3px;align-items:center}
+.bhead{padding:8px 2px;font-size:11.5px;font-weight:700;color:var(--mut);border-bottom:2px solid var(--line);text-transform:uppercase;letter-spacing:.2px}
+.bhead .r,.brow .ba{text-align:right}
+.brow{position:relative;padding:8px 2px;border-bottom:1px solid var(--line)}
+.bsl{font-size:12px;color:var(--mut);font-weight:700}
+.bname{min-width:0}
+.bname input,.brow .bq,.brow .bu{width:100%;min-width:0;height:38px;border:1.5px solid #d6d2dc;border-radius:8px;padding:0 6px;font:inherit;font-size:13.5px;outline:0;background:#fff}
+.bname input:focus,.brow .bq:focus,.brow .bu:focus{border-color:var(--blue)}
 .bname input.bad{border-color:#c0392b}
-.bx{width:34px;height:34px;font-size:24px;color:#c0392b;flex:none;line-height:1}
-.sg{position:absolute;left:0;right:0;top:100%;margin-top:3px;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 20px rgba(0,0,0,.2);z-index:6;max-height:250px;overflow:auto;display:none}
+.brow .bq{text-align:center;padding:0 2px}
+.brow .bu{appearance:none;-webkit-appearance:none;padding:0 12px 0 3px;font-size:12px;font-weight:600;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23666'/%3E%3C/svg%3E") no-repeat right 4px center;text-overflow:ellipsis}
+.brow .bu:disabled{background:#f4f2f6;color:#999}
+.brow .ba{font-weight:800;font-size:12.5px;color:var(--blue);white-space:nowrap}
+.bx{width:16px;height:30px;font-size:20px;color:#c0392b;line-height:1;padding:0}
+@media(min-width:520px){.bhead,.brow{grid-template-columns:22px minmax(0,1fr) 70px 140px 90px 28px;gap:8px}.bname input,.brow .bq,.brow .bu{font-size:15px}.brow .ba{font-size:15px}}
+.sg{position:absolute;left:0;right:0;top:100%;margin-top:-2px;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 20px rgba(0,0,0,.2);z-index:6;max-height:250px;overflow:auto;display:none}
 .sg.show{display:block}
 .sg button{display:block;width:100%;text-align:left;padding:10px 12px;border-bottom:1px solid #f0edf3;font-size:14px;line-height:1.3}
 .sg button small{display:block;color:var(--mut);font-size:12px}
 .sg .none{padding:10px 12px;font-size:13px;color:var(--mut)}
-.bgrid{display:grid;grid-template-columns:.8fr 2fr 1.2fr;gap:8px;margin-top:8px}
-.bgrid small{display:block;font-size:11px;color:var(--mut);margin-bottom:3px}
-.bgrid input,.bgrid select{width:100%;height:40px;border:1.5px solid #d6d2dc;border-radius:10px;padding:0 8px;font:inherit;font-size:15px;background:#fff;outline:0;min-width:0}
-.bgrid input:focus,.bgrid select:focus{border-color:var(--blue)}
-.bgrid input:disabled,.bgrid select:disabled{background:#f4f2f6;color:#999}
-.bro{height:40px;display:flex;align-items:center;font-weight:700;font-size:15px;white-space:nowrap}
-.bro.a{color:var(--blue);font-weight:800}
 .badd{margin:4px 16px 0;width:calc(100% - 32px);height:46px;border-radius:12px;border:1.5px dashed var(--blue);color:var(--blue);font-weight:800;font-size:15px}
 @media(min-width:900px){.pmenu{right:32px}}
 </style>
@@ -636,14 +636,13 @@ function rowCalc(r){
   return {it,v,q:ok?q:0,amt:ok?r2(q*v.p):0};
 }
 function rowHTML(r,i){
-  return `<div class="brow" data-r="${i}"><div class="bh"><span class="bsl">${i+1}</span><div class="bname"><input class="bi" placeholder="Saman ka naam likhein…" autocomplete="off" value="${esc(r.text)}"><div class="sg"></div></div><button class="bx" data-bdel="${i}" aria-label="Hatayein">×</button></div>
-  <div class="bgrid"><div><small>Qty</small><input class="bq" inputmode="decimal" placeholder="0" value="${esc(r.q)}"></div><div><small>Rate / Unit</small><select class="bu"></select></div><div><small>Amount</small><div class="bro a ba">₹0</div></div></div></div>`;
+  return `<div class="brow" data-r="${i}"><span class="bsl">${i+1}</span><div class="bname"><input class="bi" placeholder="Saman ka naam" autocomplete="off" value="${esc(r.text)}"><div class="sg"></div></div><input class="bq" inputmode="decimal" placeholder="Qty" value="${esc(r.q)}"><select class="bu"></select><div class="ba">₹0</div><button class="bx" data-bdel="${i}" aria-label="Hatayein">×</button></div>`;
 }
 function fillRow(i){
   const el=document.querySelector('#bRows .brow[data-r="'+i+'"]');if(!el)return;
   const r=bill[i],it=r.id?byId.get(r.id):null;
   const u=el.querySelector('.bu');
-  if(it&&it.v.length){u.disabled=false;u.innerHTML=it.v.map((x,k)=>`<option value="${k}"${k===Math.min(r.vi,it.v.length-1)?' selected':''}>${esc(inr(x.p)+' / '+unitTxt(x.u))}</option>`).join('')}
+  if(it&&it.v.length){u.disabled=false;u.innerHTML=it.v.map((x,k)=>`<option value="${k}"${k===Math.min(r.vi,it.v.length-1)?' selected':''}>${esc(inr(x.p)+'/'+unitTxt(x.u))}</option>`).join('')}
   else{u.disabled=true;u.innerHTML='<option>—</option>'}
   const c=rowCalc(r);
   el.querySelector('.ba').textContent=inr(c.amt);
@@ -652,7 +651,7 @@ function fillRow(i){
 }
 function calcBill(){$('#bTot').textContent=inr(r2(bill.reduce((a,r)=>a+rowCalc(r).amt,0)))}
 function renderBill(){
-  $('#bRows').innerHTML=bill.map(rowHTML).join('');
+  $('#bRows').innerHTML='<div class="bhead"><span>#</span><span>Saman</span><span>Qty</span><span>Rate / Unit</span><span class="r">Amount</span><span></span></div>'+bill.map(rowHTML).join('');
   bill.forEach((r,i)=>fillRow(i));
 }
 function bstat(msg,kind,sub){
