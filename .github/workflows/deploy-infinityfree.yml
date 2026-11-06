@@ -6,6 +6,7 @@ on:
     paths:
       - 'index.html'
       - 'img/**'
+      - 'ocr.php'
       - '.github/workflows/deploy-infinityfree.yml'
   workflow_dispatch:
 
@@ -25,6 +26,18 @@ jobs:
           mkdir -p _site
           cp index.html _site/
           cp -r img _site/img
+          cp ocr.php _site/ocr.php
+
+      # Gemini key sirf server par (PHP file) jaati hai, website ke code mein nahi
+      - name: Write server config (Gemini key)
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          python3 - <<'PY'
+          import os
+          k=os.environ.get('GEMINI_API_KEY','').strip().replace('\\','\\\\').replace("'","\\'")
+          open('_site/gemini-config.php','w').write("<?php\nreturn ['key'=>'"+k+"'];\n")
+          PY
 
       - name: Upload via FTP to /htdocs/
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5

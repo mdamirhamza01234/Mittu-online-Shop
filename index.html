@@ -779,21 +779,56 @@ async function pdfText(file){
   }
   return out;
 }
+const GEM_URL='https://mittu-online-shop.kesug.com/ocr.php?i=1';
+const blobB64=b=>new Promise((ok,no)=>{const r=new FileReader();r.onload=()=>ok(String(r.result).split(',')[1]);r.onerror=no;r.readAsDataURL(b)});
+async function geminiScan(file){
+  const isPdf=file.type==='application/pdf'||/\.pdf$/i.test(file.name);
+  let mime,data;
+  if(isPdf){if(file.size>5e6)throw new Error('big');mime='application/pdf';data=await blobB64(file)}
+  else{const c=await fileToCanvas(file);mime='image/jpeg';data=c.toDataURL('image/jpeg',0.85).split(',')[1]}
+  const stock=sellable().map(it=>({id:it.id,name:it.name,hindi:it.hindi||'',units:it.v.map(x=>unitTxt(x.u))}));
+  const ctl=new AbortController(),to=setTimeout(()=>ctl.abort(),50000);
+  try{
+    /* text/plain: browser preflight (OPTIONS) nahi bhejta */
+    const r=await fetch(GEM_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({mime,data,items:stock}),signal:ctl.signal});
+    const j=await r.json();
+    if(!j||!j.ok)throw new Error((j&&j.error)||'ai');
+    return j.data;
+  }finally{clearTimeout(to)}
+}
+function fromGemini(d){
+  const rows=[],miss=[];
+  ((d&&d.items)||[]).forEach(x=>{
+    const it=x&&x.itemId!=null?byId.get(String(x.itemId)):null;
+    if(!it||!it.live||!it.s||!it.v.length){if(x&&x.line)miss.push(String(x.line));return}
+    let vi=it.v.findIndex(v=>unitTxt(v.u).toLowerCase()===String(x.unit||'').trim().toLowerCase());if(vi<0)vi=0;
+    let q=parseFloat(x.qty);if(!(q>0)||q>9999)q=1;
+    rows.push({id:it.id,vi,q:String(r2(q)),text:it.name});
+  });
+  const ph=String((d&&d.mobile)||'').replace(/\D/g,'').slice(-10);
+  return {name:String((d&&d.customerName)||'').trim(),phone:/^[6-9]\d{9}$/.test(ph)?ph:'',addr:String((d&&d.address)||'').trim(),rows,miss};
+}
 async function scanFile(file){
   bill=[newRow()];openBill();
-  bstat('File padh rahe hain… thoda rukein');
-  try{
-    let text;
-    if(file.type==='application/pdf'||/\.pdf$/i.test(file.name))text=await pdfText(file);
-    else text=await ocr(await fileToCanvas(file),'Photo scan ho rahi hai…');
-    const res=parseBill(text);
-    if(res.name)$('#bName').value=res.name;
-    if(res.phone)$('#bPhone').value=res.phone;
-    if(res.addr)$('#bAddr').value=res.addr;
-    bill=res.rows.length?res.rows:[newRow()];renderBill();
-    if(res.rows.length)bstat(res.rows.length+' saman mile. Naam, qty aur daam ek baar check kar lein.','ok',res.miss.length?'Ye lines match nahi hui (list mein nahi mili): '+res.miss.slice(0,6).join(' | '):'');
-    else bstat('Is file se koi saman list se match nahi hua. Aap neeche se haath se jod sakte hain.','err',res.miss.length?'Padha gaya: '+res.miss.slice(0,6).join(' | '):'');
-  }catch(e){bstat('File scan nahi ho payi. Internet check karein ya saaf photo / PDF lein.','err')}
+  bstat('AI se file padh rahe hain… thoda rukein');
+  let res=null,src='';
+  try{const g=fromGemini(await geminiScan(file));if(g.rows.length||g.miss.length){res=g;src='AI'}}catch(e){res=null}
+  if(!res){
+    bstat('AI scan nahi ho paya, seedha OCR se padh rahe hain…');
+    try{
+      let text;
+      if(file.type==='application/pdf'||/\.pdf$/i.test(file.name))text=await pdfText(file);
+      else text=await ocr(await fileToCanvas(file),'Photo scan ho rahi hai…');
+      res=parseBill(text);src='OCR';
+    }catch(e){bstat('File scan nahi ho payi. Internet check karein ya saaf photo / PDF lein.','err');return}
+  }
+  if(res.name)$('#bName').value=res.name;
+  if(res.phone)$('#bPhone').value=res.phone;
+  if(res.addr)$('#bAddr').value=res.addr;
+  bill=res.rows.length?res.rows:[newRow()];renderBill();
+  const tag=src==='AI'?' (AI ne padha)':' (OCR se padha, haath ki likhai mein galti ho sakti hai)';
+  if(res.rows.length)bstat(res.rows.length+' saman mile'+tag+'. Naam, qty aur daam ek baar check kar lein.','ok',res.miss.length?'Ye lines list mein nahi mili: '+res.miss.slice(0,6).join(' | '):'');
+  else bstat('Is file se koi saman list se match nahi hua. Aap neeche se haath se jod sakte hain.','err',res.miss.length?'Padha gaya: '+res.miss.slice(0,6).join(' | '):'');
 }
 function closeMenu(){$('#pmenu').classList.remove('show')}
 document.addEventListener('click',e=>{
@@ -827,7 +862,7 @@ document.addEventListener('change',e=>{
 document.addEventListener('focusin',e=>{
   if(e.target.classList&&e.target.classList.contains('bi')){const row=e.target.closest('.brow');showSug(row,e.target.value)}
 });
-if(location.hash==='#billtest')window.__bill={parseBill,suggest,rowCalc,bill:()=>bill};
+if(location.hash==='#billtest')window.__bill={parseBill,suggest,rowCalc,fromGemini,scanFile,bill:()=>bill};
 /* ---------- Firebase (live stock) ---------- */
 function setLiveUI(on){const l=$('#live');l.classList.toggle('on',on);l.querySelector('span').textContent=on?'Live daam · dukaan ke stock se':'Offline — pichhle daam dikh rahe hain'}
 async function initFB(){
