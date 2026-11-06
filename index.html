@@ -790,9 +790,9 @@ async function geminiScan(file){
   const ctl=new AbortController(),to=setTimeout(()=>ctl.abort(),50000);
   try{
     /* text/plain: browser preflight (OPTIONS) nahi bhejta */
-    const r=await fetch(GEM_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({mime,data,items:stock}),signal:ctl.signal});
-    const j=await r.json();
-    if(!j||!j.ok)throw new Error((j&&j.error)||'ai');
+    let r;try{r=await fetch(GEM_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({mime,data,items:stock}),signal:ctl.signal})}catch(e){throw new Error('server tak nahi pahunch paye (ocr.php) - internet / deploy check karein')}
+    let j;try{j=await r.json()}catch(e){throw new Error('server ka jawab galat aaya (HTTP '+r.status+') - ocr.php deploy hui?')}
+    if(!j||!j.ok)throw new Error((j&&j.error)||'AI jawab nahi de paya');
     return j.data;
   }finally{clearTimeout(to)}
 }
@@ -811,10 +811,10 @@ function fromGemini(d){
 async function scanFile(file){
   bill=[newRow()];openBill();
   bstat('AI se file padh rahe hain… thoda rukein');
-  let res=null,src='';
-  try{const g=fromGemini(await geminiScan(file));if(g.rows.length||g.miss.length){res=g;src='AI'}}catch(e){res=null}
+  let res=null,src='',aiErr='';
+  try{const g=fromGemini(await geminiScan(file));if(g.rows.length||g.miss.length){res=g;src='AI'}else aiErr='AI ko file mein koi saman nahi mila'}catch(e){res=null;aiErr=e.message||'AI error'}
   if(!res){
-    bstat('AI scan nahi ho paya, seedha OCR se padh rahe hain…');
+    bstat('AI scan nahi ho paya, seedha OCR se padh rahe hain…','',aiErr);
     try{
       let text;
       if(file.type==='application/pdf'||/\.pdf$/i.test(file.name))text=await pdfText(file);
@@ -827,8 +827,9 @@ async function scanFile(file){
   if(res.addr)$('#bAddr').value=res.addr;
   bill=res.rows.length?res.rows:[newRow()];renderBill();
   const tag=src==='AI'?' (AI ne padha)':' (OCR se padha, haath ki likhai mein galti ho sakti hai)';
-  if(res.rows.length)bstat(res.rows.length+' saman mile'+tag+'. Naam, qty aur daam ek baar check kar lein.','ok',res.miss.length?'Ye lines list mein nahi mili: '+res.miss.slice(0,6).join(' | '):'');
-  else bstat('Is file se koi saman list se match nahi hua. Aap neeche se haath se jod sakte hain.','err',res.miss.length?'Padha gaya: '+res.miss.slice(0,6).join(' | '):'');
+  const note=src==='AI'?'':'AI nahi chala: '+aiErr;
+  if(res.rows.length)bstat(res.rows.length+' saman mile'+tag+'. Naam, qty aur daam ek baar check kar lein.','ok',[note,res.miss.length?'Ye lines list mein nahi mili: '+res.miss.slice(0,6).join(' | '):''].filter(Boolean).join('  •  '));
+  else bstat('Is file se koi saman list se match nahi hua. Aap neeche se haath se jod sakte hain.','err',[note,res.miss.length?'Padha gaya: '+res.miss.slice(0,6).join(' | '):''].filter(Boolean).join('  •  '));
 }
 function closeMenu(){$('#pmenu').classList.remove('show')}
 document.addEventListener('click',e=>{

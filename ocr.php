@@ -82,33 +82,80 @@ $body = json_encode([
   'generationConfig' => ['temperature' => 0, 'responseMimeType' => 'application/json', 'responseSchema' => $schema],
 ]);
 
-$models = [];
-if (is_array($cfg) && !empty($cfg['model'])) $models[] = $cfg['model'];
-$models = array_merge($models, ['gemini-2.5-flash', 'gemini-flash-latest']);
-$last = 'gemini error';
-foreach (array_unique($models) as $m) {
-    $ch = curl_init('https://generativelanguage.googleapis.com/v1beta/models/' . $m . ':generateContent');
-    curl_setopt_array($ch, [
-      CURLOPT_POST => true,
-      CURLOPT_POSTFIELDS => $body,
+/* ---- model chain: yaad rakha hua -> config -> Google ki list ke naye flash models -> backup ---- */
+$dir = is_writable(__DIR__) ? __DIR__ : sys_get_temp_dir();
+$memFile = $dir . '/.gemini_model';
+$listFile = $dir . '/.gemini_models.json';
+$base = (is_array($cfg) && !empty($cfg['base'])) ? $cfg['base'] : 'https://generativelanguage.googleapis.com/v1beta/';
+
+function g_call($url, $key, $body, $timeout) {
+    $ch = curl_init($url);
+    $opt = [
       CURLOPT_RETURNTRANSFER => true,
       CURLOPT_HTTPHEADER => ['Content-Type: application/json', 'x-goog-api-key: ' . $key],
-      CURLOPT_CONNECTTIMEOUT => 10,
-      CURLOPT_TIMEOUT => 28,
-    ]);
+      CURLOPT_CONNECTTIMEOUT => 8,
+      CURLOPT_TIMEOUT => max(3, (int)$timeout),
+    ];
+    if ($body !== null) { $opt[CURLOPT_POST] = true; $opt[CURLOPT_POSTFIELDS] = $body; }
+    curl_setopt_array($ch, $opt);
     $res = curl_exec($ch);
     $http = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    $cerr = curl_error($ch);
+    $err = curl_error($ch);
     curl_close($ch);
-    if ($res === false) { $last = 'network: ' . $cerr; continue; }
-    $j = json_decode($res, true);
+    return [$http, $res === false ? null : json_decode($res, true), $err];
+}
+
+function auto_models($base, $key, $listFile) {
+    if (is_file($listFile) && filemtime($listFile) > time() - 86400) {
+        $c = json_decode(@file_get_contents($listFile), true);
+        if (is_array($c) && count($c)) return $c;
+    }
+    list($http, $j) = g_call($base . 'models?pageSize=200', $key, null, 10);
+    $found = [];
+    if ($http === 200 && isset($j['models']) && is_array($j['models'])) {
+        foreach ($j['models'] as $m) {
+            if (empty($m['name']) || empty($m['supportedGenerationMethods']) || !in_array('generateContent', $m['supportedGenerationMethods'], true)) continue;
+            $n = preg_replace('#^models/#', '', $m['name']);
+            if (!preg_match('#^gemini-(\d+(?:\.\d+)?)-flash(-lite)?(-preview[\w.-]*)?$#', $n, $mm)) continue;
+            $score = ((float)$mm[1]) * 100 - (empty($mm[2]) ? 0 : 20) - (empty($mm[3]) ? 0 : 8);
+            $found[$n] = $score;
+        }
+    }
+    arsort($found);
+    $names = array_keys($found);
+    if (count($names)) @file_put_contents($listFile, json_encode($names));
+    return $names;
+}
+
+$mem = is_file($memFile) ? trim((string)@file_get_contents($memFile)) : '';
+$cands = [];
+if ($mem !== '') $cands[] = $mem;
+if (is_array($cfg) && !empty($cfg['model'])) $cands[] = $cfg['model'];
+foreach (auto_models($base, $key, $listFile) as $n) $cands[] = $n;
+foreach (['gemini-flash-latest', 'gemini-2.5-flash', 'gemini-2.0-flash'] as $n) $cands[] = $n;
+$cands = array_slice(array_values(array_unique($cands)), 0, 6);
+
+$t0 = microtime(true);
+$tried = [];
+$last = 'gemini error';
+foreach ($cands as $m) {
+    $left = 27 - (microtime(true) - $t0);
+    if ($left < 4) break;
+    list($http, $j, $cerr) = g_call($base . 'models/' . $m . ':generateContent', $key, $body, min(20, $left));
+    if ($j === null) { $last = 'network ' . $http . ': ' . $cerr; $tried[] = [$m, $http, substr($cerr, 0, 100)]; if ($m === $mem) @unlink($memFile); continue; }
     if ($http === 200 && isset($j['candidates'][0]['content']['parts'][0]['text'])) {
         $parsed = json_decode($j['candidates'][0]['content']['parts'][0]['text'], true);
-        if (is_array($parsed)) out(['ok' => true, 'data' => $parsed, 'model' => $m]);
-        $last = 'bad ai output';
-        continue;
+        if (is_array($parsed)) {
+            if ($m !== $mem) @file_put_contents($memFile, $m);
+            out(['ok' => true, 'data' => $parsed, 'model' => $m]);
+        }
+        $msg = 'bad ai output';
+    } else {
+        $msg = isset($j['error']['message']) ? substr($j['error']['message'], 0, 140) : 'no answer';
     }
-    $last = 'gemini ' . $http . (isset($j['error']['message']) ? ': ' . substr($j['error']['message'], 0, 160) : '');
-    if ($http === 400 || $http === 401 || $http === 403 || $http === 429) break; /* key / limit ki dikkat: dusra model bekaar */
+    $last = $m . ' ' . $http . ': ' . $msg;
+    $tried[] = [$m, $http, $msg];
+    if ($m === $mem) @unlink($memFile);               /* yaad rakha model ab nahi chala: dobara chunenge */
+    if ($http === 401 || ($http === 400 && preg_match('/api key|API_KEY/i', $msg))) break;   /* key hi galat hai */
 }
-out(['ok' => false, 'error' => $last], 502);
+out(['ok' => false, 'error' => $last, 'tried' => $tried], 502);
