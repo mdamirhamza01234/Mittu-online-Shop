@@ -177,7 +177,7 @@ function run_chain($mode, $base, $vbase, $key, $body, $cands, $memFile, $mem, $m
     return [null, false];
 }
 
-$modes = (strpos($key, 'AQ.') === 0) ? ['vertex', 'aistudio'] : ['aistudio', 'vertex'];
+$modes = ['aistudio', 'vertex'];   /* AQ. aur AIza dono AI Studio (Gemini API) ki keys hain; Vertex sirf backup */
 $t0 = microtime(true);
 $tried = [];
 $last = 'gemini error';

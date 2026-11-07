@@ -85,7 +85,7 @@ module.exports = async (req, res) => {
 
   const body = { contents: [{ role: 'user', parts: [{ text: buildPrompt(items) }, { inline_data: { mime_type: mime, data } }] }],
     generationConfig: { temperature: 0, responseMimeType: 'application/json', responseSchema: SCHEMA } };
-  const modes = key.startsWith('AQ.') ? ['vertex', 'aistudio'] : ['aistudio', 'vertex'];
+  const modes = ['aistudio', 'vertex'];   /* AQ. aur AIza dono AI Studio (Gemini API) ki keys hain; Vertex sirf backup */
   const t0 = Date.now(), tried = []; let last = 'gemini error';
   for (const mode of modes) {
     let keyBad = false;
