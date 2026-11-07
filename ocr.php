@@ -78,7 +78,7 @@ $schema = [
 ];
 
 $body = json_encode([
-  'contents' => [['parts' => [['text' => $prompt], ['inline_data' => ['mime_type' => $mime, 'data' => $data]]]]],
+  'contents' => [['role' => 'user', 'parts' => [['text' => $prompt], ['inline_data' => ['mime_type' => $mime, 'data' => $data]]]]],
   'generationConfig' => ['temperature' => 0, 'responseMimeType' => 'application/json', 'responseSchema' => $schema],
 ]);
 
@@ -127,35 +127,64 @@ function auto_models($base, $key, $listFile) {
     return $names;
 }
 
-$mem = is_file($memFile) ? trim((string)@file_get_contents($memFile)) : '';
-$cands = [];
-if ($mem !== '') $cands[] = $mem;
-if (is_array($cfg) && !empty($cfg['model'])) $cands[] = $cfg['model'];
-foreach (auto_models($base, $key, $listFile) as $n) $cands[] = $n;
-foreach (['gemini-flash-latest', 'gemini-2.5-flash', 'gemini-2.0-flash'] as $n) $cands[] = $n;
-$cands = array_slice(array_values(array_unique($cands)), 0, 6);
+/* Key do tarah ki hoti hai: AI Studio ("AIza...") aur Vertex AI express ("AQ...").
+   Pehle key ke shuruaat se andaza lagate hain, na chale to doosri API bhi try karte hain. */
+$mem = ''; $memMode = '';
+if (is_file($memFile)) {
+    $p = explode('|', trim((string)@file_get_contents($memFile)), 2);
+    if (count($p) === 2) { $memMode = $p[0]; $mem = $p[1]; }
+}
+$vbase = (is_array($cfg) && !empty($cfg['vbase'])) ? $cfg['vbase'] : 'https://aiplatform.googleapis.com/v1/';
+$cfgModel = (is_array($cfg) && !empty($cfg['model'])) ? $cfg['model'] : '';
 
+function candidates($mode, $mem, $memMode, $cfgModel, $base, $key, $listFile) {
+    $c = [];
+    if ($mem !== '' && $memMode === $mode) $c[] = $mem;
+    if ($cfgModel !== '') $c[] = $cfgModel;
+    if ($mode === 'aistudio') {
+        foreach (auto_models($base, $key, $listFile) as $n) $c[] = $n;
+        foreach (['gemini-flash-latest', 'gemini-2.5-flash', 'gemini-2.0-flash'] as $n) $c[] = $n;
+    } else {
+        foreach (['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.5-flash-lite', 'gemini-2.5-pro'] as $n) $c[] = $n;
+    }
+    return array_slice(array_values(array_unique($c)), 0, 6);
+}
+
+/* ek API par models ki chain. return: [jawab ya null, key_galat?] */
+function run_chain($mode, $base, $vbase, $key, $body, $cands, $memFile, $mem, $memMode, $t0, &$tried, &$last) {
+    foreach ($cands as $m) {
+        $left = 27 - (microtime(true) - $t0);
+        if ($left < 4) return [null, false];
+        $url = ($mode === 'vertex') ? $vbase . 'publishers/google/models/' . $m . ':generateContent' : $base . 'models/' . $m . ':generateContent';
+        list($http, $j, $cerr) = g_call($url, $key, $body, min(20, $left));
+        $isMem = ($m === $mem && $mode === $memMode);
+        if ($j === null) { $last = $mode . '/' . $m . ' network ' . $http . ': ' . $cerr; $tried[] = [$mode, $m, $http, substr($cerr, 0, 100)]; if ($isMem) @unlink($memFile); continue; }
+        if ($http === 200 && isset($j['candidates'][0]['content']['parts'][0]['text'])) {
+            $parsed = json_decode($j['candidates'][0]['content']['parts'][0]['text'], true);
+            if (is_array($parsed)) {
+                if (!$isMem) @file_put_contents($memFile, $mode . '|' . $m);
+                return [['ok' => true, 'data' => $parsed, 'model' => $m, 'api' => $mode], false];
+            }
+            $msg = 'bad ai output';
+        } else {
+            $msg = isset($j['error']['message']) ? substr($j['error']['message'], 0, 140) : 'no answer';
+        }
+        $last = $mode . '/' . $m . ' ' . $http . ': ' . $msg;
+        $tried[] = [$mode, $m, $http, $msg];
+        if ($isMem) @unlink($memFile);                    /* yaad rakha model ab nahi chala */
+        if ($http === 401 || ($http === 400 && preg_match('/api key|API_KEY/i', $msg))) return [null, true];   /* is API ke liye key galat */
+    }
+    return [null, false];
+}
+
+$modes = (strpos($key, 'AQ.') === 0) ? ['vertex', 'aistudio'] : ['aistudio', 'vertex'];
 $t0 = microtime(true);
 $tried = [];
 $last = 'gemini error';
-foreach ($cands as $m) {
-    $left = 27 - (microtime(true) - $t0);
-    if ($left < 4) break;
-    list($http, $j, $cerr) = g_call($base . 'models/' . $m . ':generateContent', $key, $body, min(20, $left));
-    if ($j === null) { $last = 'network ' . $http . ': ' . $cerr; $tried[] = [$m, $http, substr($cerr, 0, 100)]; if ($m === $mem) @unlink($memFile); continue; }
-    if ($http === 200 && isset($j['candidates'][0]['content']['parts'][0]['text'])) {
-        $parsed = json_decode($j['candidates'][0]['content']['parts'][0]['text'], true);
-        if (is_array($parsed)) {
-            if ($m !== $mem) @file_put_contents($memFile, $m);
-            out(['ok' => true, 'data' => $parsed, 'model' => $m]);
-        }
-        $msg = 'bad ai output';
-    } else {
-        $msg = isset($j['error']['message']) ? substr($j['error']['message'], 0, 140) : 'no answer';
-    }
-    $last = $m . ' ' . $http . ': ' . $msg;
-    $tried[] = [$m, $http, $msg];
-    if ($m === $mem) @unlink($memFile);               /* yaad rakha model ab nahi chala: dobara chunenge */
-    if ($http === 401 || ($http === 400 && preg_match('/api key|API_KEY/i', $msg))) break;   /* key hi galat hai */
+foreach ($modes as $mode) {
+    $cands = candidates($mode, $mem, $memMode, $cfgModel, $base, $key, $listFile);
+    list($res, $keyBad) = run_chain($mode, $base, $vbase, $key, $body, $cands, $memFile, $mem, $memMode, $t0, $tried, $last);
+    if ($res) out($res);
+    if (!$keyBad) break;      /* key theek hai par model nahi chale: doosri API se kuch nahi badlega */
 }
 out(['ok' => false, 'error' => $last, 'tried' => $tried], 502);
