@@ -246,6 +246,8 @@ body:has(.page.show)::before{content:'';position:fixed;inset:0;background:rgba(0
     <label for="fName">Aapka naam</label><input id="fName" autocomplete="name" maxlength="60">
     <label for="fPhone">Mobile number (10 digit)</label><input id="fPhone" type="tel" inputmode="numeric" autocomplete="tel-national" maxlength="10">
     <label for="fAddr">Pura pata (gaon / mohalla / landmark)</label><textarea id="fAddr" rows="3" maxlength="250" autocomplete="street-address"></textarea>
+    <button type="button" id="geoBtn" style="margin:8px 0 2px;width:100%;padding:11px 10px;border-radius:10px;border:1.5px solid #1a73e8;background:#e8f0fe;color:#0b57d0;font-weight:700;font-size:14px">📍 Meri location bhejein (delivery ke liye)</button>
+    <div id="geoSt" style="font-size:12.5px;color:#555;margin-bottom:6px"></div>
     <label for="fNote">Dukaandar ke liye note (optional)</label><input id="fNote" maxlength="120">
     <label>Payment</label>
     <div class="pay"><label><input type="radio" name="pay" value="COD" checked> Cash on delivery</label><label><input type="radio" name="pay" value="UPI"> UPI (delivery par)</label><label class="payon"><input type="radio" name="pay" value="ONLINE"> 💳 Online payment (abhi pay karein)</label></div>
@@ -489,6 +491,15 @@ function openCo(){
 }
 /* ---------- order ---------- */
 let FB=null;
+let GEO=null;
+function getGeo(ms){return new Promise(res=>{if(!navigator.geolocation)return res(null);try{navigator.geolocation.getCurrentPosition(p=>res({lat:+p.coords.latitude.toFixed(6),lng:+p.coords.longitude.toFixed(6),acc:Math.round(p.coords.accuracy||0)}),()=>res(null),{enableHighAccuracy:true,timeout:ms,maximumAge:60000})}catch(e){res(null)}})}
+document.addEventListener('click',async e=>{
+  const b=e.target.closest&&e.target.closest('#geoBtn');if(!b)return;
+  const st=document.getElementById('geoSt');b.disabled=true;st.style.color='#555';st.textContent='Location dhoondh rahe hain…';
+  const g=await getGeo(12000);b.disabled=false;
+  if(g){GEO=g;st.style.color='#0a7a3d';st.textContent='✅ Location mil gayi (±'+g.acc+' m). Delivery wale ko aapke ghar tak seedha map milega.'}
+  else{st.style.color='#b3261e';st.textContent='Location nahi mili. Phone ki Location ON karke, browser mein permission Allow karein.'}
+});
 function newId(){return 'MS'+Date.now().toString(36).slice(-6).toUpperCase()+Math.random().toString(36).slice(2,4).toUpperCase()}
 async function placeOrder(){
   const name=$('#fName').value.trim(),phone=$('#fPhone').value.replace(/\D/g,''),addr=$('#fAddr').value.trim(),note=$('#fNote').value.trim();
@@ -502,6 +513,8 @@ async function placeOrder(){
   const order={id:newId(),name,phone,address:addr,note,pay,items:L.map(l=>({id:l.it.id,name:l.it.name,hindi:l.it.hindi||'',unit:l.u,price:l.p,qty:l.q,total:Math.round(l.p*l.q*100)/100})),total,status:'new',ts:Date.now(),src:'shop'};
   if(pay==='ONLINE'){order.payStatus='pending';const pu=($('#fUpi').value||'').trim();if(pu)order.payerUpi=pu}
   const btn=$('#placeBtn');btn.disabled=true;btn.textContent='Bhej rahe hain…';err.textContent='';
+  if(!GEO){GEO=await getGeo(5000)}
+  if(GEO){order.lat=GEO.lat;order.lng=GEO.lng;order.acc=GEO.acc}
   try{
     if(!FB)throw new Error('offline');
     await Promise.race([FB.set(FB.push(FB.ref(FB.db,'shopOrders')),order),new Promise((_,r)=>setTimeout(()=>r(new Error('timeout')),15000))]);
