@@ -791,32 +791,24 @@ async function directScan(mime,data,stock){
   const lines=stock.slice(0,1500).map(it=>(it.id+' | '+it.name+' | '+(it.hindi||'')+' | '+it.units.join(' / ')).replace(/\n/g,' '));
   const prompt="You read a customer's shopping list or bill (a photo or PDF; may be HANDWRITTEN; language may be Hindi in Devanagari, Hinglish or English) for an Indian grocery and general wholesale shop in Bihar.\nExtract: customerName, mobile (10-digit Indian number, digits only), address (empty string if absent), and every item the customer wants.\nFor each item line choose the best matching stock item from the STOCK list below. Match by meaning, not spelling: Hindi, Hinglish and English names are the same item (e.g. आलू = Aalu = Potato, चीनी = Cheeni = Sugar, सरसों तेल = Sarson Tel = Mustard Oil).\nRules: itemId must be EXACTLY an id from STOCK, or null if nothing fits. unit must be EXACTLY one of that item's listed units. If the customer wrote another unit (gm, ग्राम, किलो, लीटर...) convert qty into one of the listed units (500 gm with unit kg => qty 0.5). If no unit is written use the first listed unit. qty is a number greater than 0 (default 1). line is the item text as written. Ignore prices, rates, totals and dates. Never invent items that are not written.\n\nSTOCK (id | name | hindi | units):\n"+lines.join('\n');
   const schema={type:'OBJECT',properties:{customerName:{type:'STRING'},mobile:{type:'STRING'},address:{type:'STRING'},items:{type:'ARRAY',items:{type:'OBJECT',properties:{line:{type:'STRING'},itemId:{type:'STRING',nullable:true},qty:{type:'NUMBER'},unit:{type:'STRING'}},required:['line','qty']}}},required:['items']};
-  const mk=(m,think)=>{const gc={temperature:0,responseMimeType:'application/json',responseSchema:schema};
+  const mk=(m,think,noSch)=>{const gc={temperature:0,maxOutputTokens:8192,responseMimeType:'application/json'};if(!noSch)gc.responseSchema=schema;
     if(think){if(/^gemini-2\.5-flash/.test(m))gc.thinkingConfig={thinkingBudget:0};else if(/^gemini-([3-9]|\d{2})/.test(m))gc.thinkingConfig={thinkingLevel:'low'}}
     return JSON.stringify({contents:[{role:'user',parts:[{text:prompt},{inline_data:{mime_type:mime,data}}]}],generationConfig:gc})};
   const hdr={'Content-Type':'application/json','x-goog-api-key':AI_DIRECT_KEY};
   const t0=Date.now(),tried=[];
-  const post=async(m,think)=>{const ctl=new AbortController(),left=Math.min(45000,95000-(Date.now()-t0)),to=setTimeout(()=>ctl.abort(),Math.max(left,3000));
-    try{const r=await fetch(G+'models/'+m+':generateContent',{method:'POST',headers:hdr,body:mk(m,think),signal:ctl.signal});let j=null;try{j=await r.json()}catch(e){}return{http:r.status,j}}
+  const post=async(m,think,noSch)=>{const ctl=new AbortController(),left=Math.min(45000,95000-(Date.now()-t0)),to=setTimeout(()=>ctl.abort(),Math.max(left,3000));
+    try{const r=await fetch(G+'models/'+m+':generateContent',{method:'POST',headers:hdr,body:mk(m,think,noSch),signal:ctl.signal});let j=null;try{j=await r.json()}catch(e){}return{http:r.status,j}}
     catch(e){return{http:0,j:null,err:String(e&&e.message||e)}}finally{clearTimeout(to)}};
+  /* wahi models jo Countam calculator mein chal rahe hain (naye 3.7/3.8 slow nikle) */
   let cands=[];
   try{const mm=localStorage.getItem('mittu_ai_model');if(mm)cands.push(mm)}catch(e){}
-  try{
-    const c=JSON.parse(localStorage.getItem('mittu_ai_models')||'null');
-    if(c&&c.t>Date.now()-864e5)cands=cands.concat(c.n);
-    else{const ctl=new AbortController(),to=setTimeout(()=>ctl.abort(),8000);
-      try{const r=await fetch(G+'models?pageSize=200',{headers:hdr,signal:ctl.signal});const j=await r.json(),f={};
-        (j.models||[]).forEach(m=>{if(!(m.supportedGenerationMethods||[]).includes('generateContent'))return;const n=String(m.name).replace(/^models\//,''),x=n.match(/^gemini-(\d+(?:\.\d+)?)-flash(-lite)?(-preview[\w.-]*)?$/);if(x)f[n]=parseFloat(x[1])*100-(x[2]?20:0)-(x[3]?8:0)});
-        const names=Object.keys(f).sort((a,b)=>f[b]-f[a]);if(names.length){cands=cands.concat(names);try{localStorage.setItem('mittu_ai_models',JSON.stringify({t:Date.now(),n:names}))}catch(e){}}}finally{clearTimeout(to)}}
-  }catch(e){}
-  const mem0=cands.length&&/^gemini-/.test(cands[0])&&localStorage.getItem('mittu_ai_model')===cands[0]?[cands[0]]:[];
-  cands=mem0.concat(['gemini-2.5-flash','gemini-flash-latest'],cands,['gemini-2.0-flash']);
-  cands=[...new Set(cands)].slice(0,4);
+  cands=[...new Set(cands.concat(['gemini-3.5-flash','gemini-3-flash-preview','gemini-3.1-flash-lite','gemini-2.5-flash']))].slice(0,4);
   let last='';
   for(const m of cands){
     if(95000-(Date.now()-t0)<8000)break;
     let r=await post(m,true);
     if(r.http===400&&r.j&&r.j.error&&/think/i.test(r.j.error.message||''))r=await post(m,false);
+    if(r.http===400&&r.j&&r.j.error&&!/api key/i.test(r.j.error.message||''))r=await post(m,false,true);
     const t=r.j&&r.j.candidates&&r.j.candidates[0]&&r.j.candidates[0].content&&r.j.candidates[0].content.parts&&r.j.candidates[0].content.parts[0]&&r.j.candidates[0].content.parts[0].text;
     if(r.http===200&&t){let p=null;try{p=JSON.parse(t)}catch(e){}if(p&&typeof p==='object'){try{localStorage.setItem('mittu_ai_model',m)}catch(e){}return p}}
     const msg=r.http===0?('network '+r.err):((r.j&&r.j.error&&r.j.error.message)||'no answer');
