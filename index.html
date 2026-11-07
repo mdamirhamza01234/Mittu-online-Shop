@@ -796,7 +796,7 @@ async function directScan(mime,data,stock){
     return JSON.stringify({contents:[{role:'user',parts:[{text:prompt},{inline_data:{mime_type:mime,data}}]}],generationConfig:gc})};
   const hdr={'Content-Type':'application/json','x-goog-api-key':AI_DIRECT_KEY};
   const t0=Date.now(),tried=[];
-  const post=async(m,think)=>{const ctl=new AbortController(),left=Math.min(28000,55000-(Date.now()-t0)),to=setTimeout(()=>ctl.abort(),Math.max(left,3000));
+  const post=async(m,think)=>{const ctl=new AbortController(),left=Math.min(45000,95000-(Date.now()-t0)),to=setTimeout(()=>ctl.abort(),Math.max(left,3000));
     try{const r=await fetch(G+'models/'+m+':generateContent',{method:'POST',headers:hdr,body:mk(m,think),signal:ctl.signal});let j=null;try{j=await r.json()}catch(e){}return{http:r.status,j}}
     catch(e){return{http:0,j:null,err:String(e&&e.message||e)}}finally{clearTimeout(to)}};
   let cands=[];
@@ -809,11 +809,12 @@ async function directScan(mime,data,stock){
         (j.models||[]).forEach(m=>{if(!(m.supportedGenerationMethods||[]).includes('generateContent'))return;const n=String(m.name).replace(/^models\//,''),x=n.match(/^gemini-(\d+(?:\.\d+)?)-flash(-lite)?(-preview[\w.-]*)?$/);if(x)f[n]=parseFloat(x[1])*100-(x[2]?20:0)-(x[3]?8:0)});
         const names=Object.keys(f).sort((a,b)=>f[b]-f[a]);if(names.length){cands=cands.concat(names);try{localStorage.setItem('mittu_ai_models',JSON.stringify({t:Date.now(),n:names}))}catch(e){}}}finally{clearTimeout(to)}}
   }catch(e){}
-  cands=cands.concat(['gemini-flash-latest','gemini-2.5-flash','gemini-2.0-flash']);
+  const mem0=cands.length&&/^gemini-/.test(cands[0])&&localStorage.getItem('mittu_ai_model')===cands[0]?[cands[0]]:[];
+  cands=mem0.concat(['gemini-2.5-flash','gemini-flash-latest'],cands,['gemini-2.0-flash']);
   cands=[...new Set(cands)].slice(0,4);
   let last='';
   for(const m of cands){
-    if(55000-(Date.now()-t0)<5000)break;
+    if(95000-(Date.now()-t0)<8000)break;
     let r=await post(m,true);
     if(r.http===400&&r.j&&r.j.error&&/think/i.test(r.j.error.message||''))r=await post(m,false);
     const t=r.j&&r.j.candidates&&r.j.candidates[0]&&r.j.candidates[0].content&&r.j.candidates[0].content.parts&&r.j.candidates[0].content.parts[0]&&r.j.candidates[0].content.parts[0].text;
@@ -829,7 +830,7 @@ async function geminiScan(file){
   const isPdf=file.type==='application/pdf'||/\.pdf$/i.test(file.name);
   let mime,data;
   if(isPdf){if(file.size>5e6)throw new Error('big');mime='application/pdf';data=await blobB64(file)}
-  else{const c=await fileToCanvas(file);mime='image/jpeg';data=c.toDataURL('image/jpeg',0.85).split(',')[1]}
+  else{const c=await fileToCanvas(file);mime='image/jpeg';data=c.toDataURL('image/jpeg',0.8).split(',')[1]}
   const stock=sellable().map(it=>({id:it.id,name:it.name,hindi:it.hindi||'',units:it.v.map(x=>unitTxt(x.u))}));
   const payload=JSON.stringify({mime,data,items:stock});
   let directErr='';
