@@ -58,7 +58,7 @@ async function candidates(mode, key) {
   if (process.env.GEMINI_MODEL) c.push(process.env.GEMINI_MODEL);
   if (mode === 'aistudio') { (await autoModels(key)).forEach(n => c.push(n)); c.push('gemini-flash-latest', 'gemini-2.5-flash', 'gemini-2.0-flash'); }
   else c.push('gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.5-flash-lite', 'gemini-2.5-pro');
-  return [...new Set(c)].slice(0, 6);
+  return [...new Set(c)].slice(0, 4);
 }
 
 module.exports = async (req, res) => {
@@ -83,16 +83,20 @@ module.exports = async (req, res) => {
   if (h.length >= 30) return res.status(429).json({ ok: false, error: 'too many scans, thodi der baad try karein' });
   h.push(now); hits.set(ip, h); if (hits.size > 5000) hits.clear();
 
-  const body = { contents: [{ role: 'user', parts: [{ text: buildPrompt(items) }, { inline_data: { mime_type: mime, data } }] }],
+  const bodyBase = { contents: [{ role: 'user', parts: [{ text: buildPrompt(items) }, { inline_data: { mime_type: mime, data } }] }],
     generationConfig: { temperature: 0, responseMimeType: 'application/json', responseSchema: SCHEMA } };
+  const mk = (m, think) => { const b = JSON.parse(JSON.stringify(bodyBase));
+    if (think) { if (/^gemini-2\.5-flash/.test(m)) b.generationConfig.thinkingConfig = { thinkingBudget: 0 }; else if (/^gemini-([3-9]|\d{2})/.test(m)) b.generationConfig.thinkingConfig = { thinkingLevel: 'low' }; }
+    return b; };
   const modes = ['aistudio', 'vertex'];   /* AQ. aur AIza dono AI Studio (Gemini API) ki keys hain; Vertex sirf backup */
   const t0 = Date.now(), tried = []; let last = 'gemini error';
   for (const mode of modes) {
     let keyBad = false;
     for (const m of await candidates(mode, key)) {
-      const left = 50000 - (Date.now() - t0); if (left < 4000) break;
+      const left = 55000 - (Date.now() - t0); if (left < 5000) break;
       const url = mode === 'vertex' ? VBASE + 'publishers/google/models/' + m + ':generateContent' : BASE + 'models/' + m + ':generateContent';
-      const r = await call(url, key, body, Math.min(25000, left));
+      let r = await call(url, key, mk(m, true), Math.min(28000, left));
+      if (r.http === 400 && r.j && r.j.error && /think/i.test(r.j.error.message || '')) { const l2 = 55000 - (Date.now() - t0); if (l2 >= 5000) r = await call(url, key, mk(m, false), Math.min(28000, l2)); }
       const isMem = mem && mem.mode === mode && mem.model === m;
       let msg;
       if (r.http === 0) { msg = 'network: ' + r.err; }

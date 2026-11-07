@@ -77,10 +77,20 @@ $schema = [
   'required' => ['items'],
 ];
 
-$body = json_encode([
+$t0 = microtime(true);
+$bodyArr = [
   'contents' => [['role' => 'user', 'parts' => [['text' => $prompt], ['inline_data' => ['mime_type' => $mime, 'data' => $data]]]]],
   'generationConfig' => ['temperature' => 0, 'responseMimeType' => 'application/json', 'responseSchema' => $schema],
-]);
+];
+
+/* naye models "sochte" bahut hain (timeout ki wajah): sochna kam karte hain; model na maane to bina iske dobara */
+function make_body($arr, $m, $think) {
+    if ($think) {
+        if (preg_match('#^gemini-2\.5-flash#', $m)) $arr['generationConfig']['thinkingConfig'] = ['thinkingBudget' => 0];
+        elseif (preg_match('#^gemini-([3-9]|\d{2})#', $m)) $arr['generationConfig']['thinkingConfig'] = ['thinkingLevel' => 'low'];
+    }
+    return json_encode($arr);
+}
 
 /* ---- model chain: yaad rakha hua -> config -> Google ki list ke naye flash models -> backup ---- */
 $dir = is_writable(__DIR__) ? __DIR__ : sys_get_temp_dir();
@@ -147,16 +157,20 @@ function candidates($mode, $mem, $memMode, $cfgModel, $base, $key, $listFile) {
     } else {
         foreach (['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.5-flash-lite', 'gemini-2.5-pro'] as $n) $c[] = $n;
     }
-    return array_slice(array_values(array_unique($c)), 0, 6);
+    return array_slice(array_values(array_unique($c)), 0, 4);
 }
 
 /* ek API par models ki chain. return: [jawab ya null, key_galat?] */
-function run_chain($mode, $base, $vbase, $key, $body, $cands, $memFile, $mem, $memMode, $t0, &$tried, &$last) {
+function run_chain($mode, $base, $vbase, $key, $bodyArr, $cands, $memFile, $mem, $memMode, $t0, &$tried, &$last) {
     foreach ($cands as $m) {
-        $left = 27 - (microtime(true) - $t0);
-        if ($left < 4) return [null, false];
+        $left = 55 - (microtime(true) - $t0);
+        if ($left < 5) return [null, false];
         $url = ($mode === 'vertex') ? $vbase . 'publishers/google/models/' . $m . ':generateContent' : $base . 'models/' . $m . ':generateContent';
-        list($http, $j, $cerr) = g_call($url, $key, $body, min(20, $left));
+        list($http, $j, $cerr) = g_call($url, $key, make_body($bodyArr, $m, true), min(28, $left));
+        if ($j !== null && $http === 400 && isset($j['error']['message']) && preg_match('/think/i', $j['error']['message'])) {
+            $left = 55 - (microtime(true) - $t0);
+            if ($left >= 5) list($http, $j, $cerr) = g_call($url, $key, make_body($bodyArr, $m, false), min(28, $left));
+        }
         $isMem = ($m === $mem && $mode === $memMode);
         if ($j === null) { $last = $mode . '/' . $m . ' network ' . $http . ': ' . $cerr; $tried[] = [$mode, $m, $http, substr($cerr, 0, 100)]; if ($isMem) @unlink($memFile); continue; }
         if ($http === 200 && isset($j['candidates'][0]['content']['parts'][0]['text'])) {
@@ -178,12 +192,11 @@ function run_chain($mode, $base, $vbase, $key, $body, $cands, $memFile, $mem, $m
 }
 
 $modes = ['aistudio', 'vertex'];   /* AQ. aur AIza dono AI Studio (Gemini API) ki keys hain; Vertex sirf backup */
-$t0 = microtime(true);
 $tried = [];
 $last = 'gemini error';
 foreach ($modes as $mode) {
     $cands = candidates($mode, $mem, $memMode, $cfgModel, $base, $key, $listFile);
-    list($res, $keyBad) = run_chain($mode, $base, $vbase, $key, $body, $cands, $memFile, $mem, $memMode, $t0, $tried, $last);
+    list($res, $keyBad) = run_chain($mode, $base, $vbase, $key, $bodyArr, $cands, $memFile, $mem, $memMode, $t0, $tried, $last);
     if ($res) out($res);
     if (!$keyBad) break;      /* key theek hai par model nahi chale: doosri API se kuch nahi badlega */
 }

@@ -794,13 +794,14 @@ async function geminiScan(file){
   try{const m=localStorage.getItem('mittu_ai_url');if(m&&urls.includes(m))urls=[m].concat(urls.filter(u=>u!==m))}catch(e){}
   let aiErr='',netErr='';
   for(const url of urls){
-    const ctl=new AbortController(),to=setTimeout(()=>ctl.abort(),55000);
+    const ctl=new AbortController(),to=setTimeout(()=>ctl.abort(),70000);
     try{
       /* text/plain: browser preflight (OPTIONS) nahi bhejta */
       let r;try{r=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain'},body:payload,signal:ctl.signal})}catch(e){netErr='server tak nahi pahunch paye ('+url.replace(/^https?:\/\//,'').split('/')[0]+')';continue}
       let j;try{j=await r.json()}catch(e){netErr='server ka jawab galat aaya (HTTP '+r.status+', '+url.replace(/^https?:\/\//,'').split('/')[0]+')';continue}
       if(j&&j.ok){try{localStorage.setItem('mittu_ai_url',url)}catch(e){}return j.data}
       aiErr=(j&&j.error)||'AI jawab nahi de paya';
+      if(j&&j.tried&&j.tried.length)aiErr+=' [try kiye: '+j.tried.map(t=>String(t[1]).replace(/^gemini-/,'')+' '+t[2]).join(', ')+']';
     }finally{clearTimeout(to)}
   }
   throw new Error(aiErr||netErr||'AI server nahi mila');
