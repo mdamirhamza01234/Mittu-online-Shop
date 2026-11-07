@@ -786,6 +786,7 @@ const AI_URLS=[AI_VERCEL,'https://mittu-online-shop.kesug.com/ocr.php?i=1'].filt
 const blobB64=b=>new Promise((ok,no)=>{const r=new FileReader();r.onload=()=>ok(String(r.result).split(',')[1]);r.onerror=no;r.readAsDataURL(b)});
 /* key sirf is phone/browser mein save hoti hai (menu > AI key), code ya GitHub mein nahi */
 let AI_DIRECT_KEY='';try{AI_DIRECT_KEY=(localStorage.getItem('mittu_ai_key')||'').trim()}catch(e){}
+let AI_T0=0,aiStage='';
 async function directScan(mime,data,stock){
   const G='https://generativelanguage.googleapis.com/v1beta/';
   const lines=stock.slice(0,1500).map(it=>(it.id+' | '+it.name+' | '+(it.hindi||'')+' | '+it.units.join(' / ')).replace(/\n/g,' '));
@@ -796,16 +797,32 @@ async function directScan(mime,data,stock){
     return JSON.stringify({contents:[{role:'user',parts:[{text:prompt},{inline_data:{mime_type:mime,data}}]}],generationConfig:gc})};
   const hdr={'Content-Type':'application/json','x-goog-api-key':AI_DIRECT_KEY};
   const t0=Date.now(),tried=[];
-  const post=async(m,think,noSch)=>{const ctl=new AbortController(),left=Math.min(45000,95000-(Date.now()-t0)),to=setTimeout(()=>ctl.abort(),Math.max(left,3000));
-    try{const r=await fetch(G+'models/'+m+':generateContent',{method:'POST',headers:hdr,body:mk(m,think,noSch),signal:ctl.signal});let j=null;try{j=await r.json()}catch(e){}return{http:r.status,j}}
-    catch(e){return{http:0,j:null,err:String(e&&e.message||e)}}finally{clearTimeout(to)}};
+  const DL=()=>30000-(Date.now()-AI_T0);
+  const post=async(m,think,noSch)=>{const ctl=new AbortController(),to=setTimeout(()=>ctl.abort(),Math.max(DL(),1000));
+    aiStage='📤 File AI ko bheji ja rahi hai';
+    try{
+      const r=await fetch(G+'models/'+m+':streamGenerateContent?alt=sse',{method:'POST',headers:hdr,body:mk(m,think,noSch),signal:ctl.signal});
+      if(!r.ok){let j=null;try{j=await r.json()}catch(e){}return{http:r.status,j}}
+      aiStage='🔍 AI file scan karke samajh raha hai';
+      let txt='';
+      if(r.body&&r.body.getReader){
+        const rd=r.body.getReader(),dec=new TextDecoder();let buf='';
+        for(;;){const{value,done}=await rd.read();if(done)break;buf+=dec.decode(value,{stream:true});const ln=buf.split('\n');buf=ln.pop();
+          for(const raw of ln){const l=raw.trim();if(l.indexOf('data:')!==0)continue;let o;try{o=JSON.parse(l.slice(5))}catch(e){continue}
+            const ps=o.candidates&&o.candidates[0]&&o.candidates[0].content&&o.candidates[0].content.parts;
+            if(ps)ps.forEach(p=>{if(p.text)txt+=p.text});}
+          const n=(txt.match(/"line"/g)||[]).length;
+          if(txt)aiStage='✍️ Saman likh raha hai'+(n?' — '+n+' mile':'');}
+      }else{const j=await r.json();const arr=Array.isArray(j)?j:[j];arr.forEach(o=>{const ps=o.candidates&&o.candidates[0]&&o.candidates[0].content&&o.candidates[0].content.parts;if(ps)ps.forEach(p=>{if(p.text)txt+=p.text})})}
+      return{http:200,j:{candidates:[{content:{parts:[{text:txt}]}}]}};
+    }catch(e){return{http:0,j:null,err:(ctl.signal.aborted?'30 sec ka time khatam':String(e&&e.message||e))}}finally{clearTimeout(to)}};
   /* wahi models jo Countam calculator mein chal rahe hain (naye 3.7/3.8 slow nikle) */
   let cands=[];
   try{const mm=localStorage.getItem('mittu_ai_model');if(mm)cands.push(mm)}catch(e){}
   cands=[...new Set(cands.concat(['gemini-3.5-flash','gemini-3-flash-preview','gemini-3.1-flash-lite','gemini-2.5-flash']))].slice(0,4);
   let last='';
   for(const m of cands){
-    if(95000-(Date.now()-t0)<8000)break;
+    if(DL()<4000)break;
     let r=await post(m,true);
     if(r.http===400&&r.j&&r.j.error&&/think/i.test(r.j.error.message||''))r=await post(m,false);
     if(r.http===400&&r.j&&r.j.error&&!/api key/i.test(r.j.error.message||''))r=await post(m,false,true);
@@ -831,7 +848,7 @@ async function geminiScan(file){
   try{const m=localStorage.getItem('mittu_ai_url');if(m&&urls.includes(m))urls=[m].concat(urls.filter(u=>u!==m))}catch(e){}
   let aiErr='',netErr='';
   for(const url of urls){
-    const ctl=new AbortController(),to=setTimeout(()=>ctl.abort(),70000);
+    const ctl=new AbortController(),to=setTimeout(()=>ctl.abort(),Math.max(3000,30000-(Date.now()-AI_T0)));
     try{
       /* text/plain: browser preflight (OPTIONS) nahi bhejta */
       let r;try{r=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain'},body:payload,signal:ctl.signal})}catch(e){netErr='server tak nahi pahunch paye ('+url.replace(/^https?:\/\//,'').split('/')[0]+')';continue}
@@ -857,7 +874,7 @@ function fromGemini(d){
 }
 async function scanFile(file){
   bill=[newRow()];openBill();
-  const st0=Date.now(),tick=()=>bstat('🤖 AI aapki file padh raha hai… '+Math.round((Date.now()-st0)/1000)+' sec','','Handwriting ya Hindi ho to 10-40 sec lag sakte hain');
+  const st0=Date.now();AI_T0=st0;aiStage='📤 File AI ko bheji ja rahi hai';const tick=()=>{const t=Math.min(30,Math.round((Date.now()-st0)/1000));bstat(aiStage+'   ⏱ '+t+' / 30 sec','','Handwriting ya Hindi ho to thoda time lag sakta hai')};
   tick();const tm=setInterval(tick,1000);
   let res=null,src='',aiErr='';
   try{const g=fromGemini(await geminiScan(file));if(g.rows.length||g.miss.length){res=g;src='AI'}else aiErr='AI ko file mein koi saman nahi mila'}catch(e){res=null;aiErr=e.message||'AI error'}
