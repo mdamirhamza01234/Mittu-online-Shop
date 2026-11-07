@@ -779,7 +779,9 @@ async function pdfText(file){
   }
   return out;
 }
-const GEM_URL='https://mittu-online-shop.kesug.com/ocr.php?i=1';
+/* AI scan server: pehle yaad rakha hua, phir Vercel (app ke liye), phir InfinityFree (website ke liye). */
+const AI_VERCEL='';   /* deploy ke baad yahan Vercel ka link aayega: https://<project>.vercel.app/api/ocr */
+const AI_URLS=[AI_VERCEL,'https://mittu-online-shop.kesug.com/ocr.php?i=1'].filter(Boolean);
 const blobB64=b=>new Promise((ok,no)=>{const r=new FileReader();r.onload=()=>ok(String(r.result).split(',')[1]);r.onerror=no;r.readAsDataURL(b)});
 async function geminiScan(file){
   const isPdf=file.type==='application/pdf'||/\.pdf$/i.test(file.name);
@@ -787,14 +789,21 @@ async function geminiScan(file){
   if(isPdf){if(file.size>5e6)throw new Error('big');mime='application/pdf';data=await blobB64(file)}
   else{const c=await fileToCanvas(file);mime='image/jpeg';data=c.toDataURL('image/jpeg',0.85).split(',')[1]}
   const stock=sellable().map(it=>({id:it.id,name:it.name,hindi:it.hindi||'',units:it.v.map(x=>unitTxt(x.u))}));
-  const ctl=new AbortController(),to=setTimeout(()=>ctl.abort(),50000);
-  try{
-    /* text/plain: browser preflight (OPTIONS) nahi bhejta */
-    let r;try{r=await fetch(GEM_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({mime,data,items:stock}),signal:ctl.signal})}catch(e){throw new Error('server tak nahi pahunch paye (ocr.php) - internet / deploy check karein')}
-    let j;try{j=await r.json()}catch(e){throw new Error('server ka jawab galat aaya (HTTP '+r.status+') - ocr.php deploy hui?')}
-    if(!j||!j.ok)throw new Error((j&&j.error)||'AI jawab nahi de paya');
-    return j.data;
-  }finally{clearTimeout(to)}
+  const payload=JSON.stringify({mime,data,items:stock});
+  let urls=AI_URLS.slice();
+  try{const m=localStorage.getItem('mittu_ai_url');if(m&&urls.includes(m))urls=[m].concat(urls.filter(u=>u!==m))}catch(e){}
+  let aiErr='',netErr='';
+  for(const url of urls){
+    const ctl=new AbortController(),to=setTimeout(()=>ctl.abort(),55000);
+    try{
+      /* text/plain: browser preflight (OPTIONS) nahi bhejta */
+      let r;try{r=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain'},body:payload,signal:ctl.signal})}catch(e){netErr='server tak nahi pahunch paye ('+url.replace(/^https?:\/\//,'').split('/')[0]+')';continue}
+      let j;try{j=await r.json()}catch(e){netErr='server ka jawab galat aaya (HTTP '+r.status+', '+url.replace(/^https?:\/\//,'').split('/')[0]+')';continue}
+      if(j&&j.ok){try{localStorage.setItem('mittu_ai_url',url)}catch(e){}return j.data}
+      aiErr=(j&&j.error)||'AI jawab nahi de paya';
+    }finally{clearTimeout(to)}
+  }
+  throw new Error(aiErr||netErr||'AI server nahi mila');
 }
 function fromGemini(d){
   const rows=[],miss=[];
