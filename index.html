@@ -857,9 +857,11 @@ function fromGemini(d){
 }
 async function scanFile(file){
   bill=[newRow()];openBill();
-  bstat('AI se file padh rahe hain… thoda rukein');
+  const st0=Date.now(),tick=()=>bstat('🤖 AI aapki file padh raha hai… '+Math.round((Date.now()-st0)/1000)+' sec','','Handwriting ya Hindi ho to 10-40 sec lag sakte hain');
+  tick();const tm=setInterval(tick,1000);
   let res=null,src='',aiErr='';
   try{const g=fromGemini(await geminiScan(file));if(g.rows.length||g.miss.length){res=g;src='AI'}else aiErr='AI ko file mein koi saman nahi mila'}catch(e){res=null;aiErr=e.message||'AI error'}
+  clearInterval(tm);
   if(!res){
     bstat('AI scan nahi ho paya, seedha OCR se padh rahe hain…','',aiErr);
     try{
