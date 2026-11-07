@@ -202,6 +202,7 @@ body:has(.page.show)::before{content:'';position:fixed;inset:0;background:rgba(0
   <div class="sticky">
     <div class="search"><label><span>🔍</span><input id="q" type="search" placeholder="Search karein: atta, tel, sabun…" autocomplete="off"></label><button class="plusbtn" id="plusBtn" aria-label="Bill / Upload">+</button><div class="pmenu" id="pmenu">
   <button id="mBill"><span>🧾</span><div>Bill banayen<small>Saman chun kar bill / order banayen</small></div></button>
+  <button id="mKey"><span>🔑</span><div>AI key daalein<small>Sirf is phone mein save hogi</small></div></button>
   <button id="mUp"><span>📤</span><div>File upload karein<small>Photo ya PDF se bill bhar jayega</small></div></button>
 </div></div>
     <div class="tabs" id="tabs"></div>
@@ -783,6 +784,47 @@ async function pdfText(file){
 const AI_VERCEL='';   /* deploy ke baad yahan Vercel ka link aayega: https://<project>.vercel.app/api/ocr */
 const AI_URLS=[AI_VERCEL,'https://mittu-online-shop.kesug.com/ocr.php?i=1'].filter(Boolean);
 const blobB64=b=>new Promise((ok,no)=>{const r=new FileReader();r.onload=()=>ok(String(r.result).split(',')[1]);r.onerror=no;r.readAsDataURL(b)});
+/* key sirf is phone/browser mein save hoti hai (menu > AI key), code ya GitHub mein nahi */
+let AI_DIRECT_KEY='';try{AI_DIRECT_KEY=(localStorage.getItem('mittu_ai_key')||'').trim()}catch(e){}
+async function directScan(mime,data,stock){
+  const G='https://generativelanguage.googleapis.com/v1beta/';
+  const lines=stock.slice(0,1500).map(it=>(it.id+' | '+it.name+' | '+(it.hindi||'')+' | '+it.units.join(' / ')).replace(/\n/g,' '));
+  const prompt="You read a customer's shopping list or bill (a photo or PDF; may be HANDWRITTEN; language may be Hindi in Devanagari, Hinglish or English) for an Indian grocery and general wholesale shop in Bihar.\nExtract: customerName, mobile (10-digit Indian number, digits only), address (empty string if absent), and every item the customer wants.\nFor each item line choose the best matching stock item from the STOCK list below. Match by meaning, not spelling: Hindi, Hinglish and English names are the same item (e.g. आलू = Aalu = Potato, चीनी = Cheeni = Sugar, सरसों तेल = Sarson Tel = Mustard Oil).\nRules: itemId must be EXACTLY an id from STOCK, or null if nothing fits. unit must be EXACTLY one of that item's listed units. If the customer wrote another unit (gm, ग्राम, किलो, लीटर...) convert qty into one of the listed units (500 gm with unit kg => qty 0.5). If no unit is written use the first listed unit. qty is a number greater than 0 (default 1). line is the item text as written. Ignore prices, rates, totals and dates. Never invent items that are not written.\n\nSTOCK (id | name | hindi | units):\n"+lines.join('\n');
+  const schema={type:'OBJECT',properties:{customerName:{type:'STRING'},mobile:{type:'STRING'},address:{type:'STRING'},items:{type:'ARRAY',items:{type:'OBJECT',properties:{line:{type:'STRING'},itemId:{type:'STRING',nullable:true},qty:{type:'NUMBER'},unit:{type:'STRING'}},required:['line','qty']}}},required:['items']};
+  const mk=(m,think)=>{const gc={temperature:0,responseMimeType:'application/json',responseSchema:schema};
+    if(think){if(/^gemini-2\.5-flash/.test(m))gc.thinkingConfig={thinkingBudget:0};else if(/^gemini-([3-9]|\d{2})/.test(m))gc.thinkingConfig={thinkingLevel:'low'}}
+    return JSON.stringify({contents:[{role:'user',parts:[{text:prompt},{inline_data:{mime_type:mime,data}}]}],generationConfig:gc})};
+  const hdr={'Content-Type':'application/json','x-goog-api-key':AI_DIRECT_KEY};
+  const t0=Date.now(),tried=[];
+  const post=async(m,think)=>{const ctl=new AbortController(),left=Math.min(28000,55000-(Date.now()-t0)),to=setTimeout(()=>ctl.abort(),Math.max(left,3000));
+    try{const r=await fetch(G+'models/'+m+':generateContent',{method:'POST',headers:hdr,body:mk(m,think),signal:ctl.signal});let j=null;try{j=await r.json()}catch(e){}return{http:r.status,j}}
+    catch(e){return{http:0,j:null,err:String(e&&e.message||e)}}finally{clearTimeout(to)}};
+  let cands=[];
+  try{const mm=localStorage.getItem('mittu_ai_model');if(mm)cands.push(mm)}catch(e){}
+  try{
+    const c=JSON.parse(localStorage.getItem('mittu_ai_models')||'null');
+    if(c&&c.t>Date.now()-864e5)cands=cands.concat(c.n);
+    else{const ctl=new AbortController(),to=setTimeout(()=>ctl.abort(),8000);
+      try{const r=await fetch(G+'models?pageSize=200',{headers:hdr,signal:ctl.signal});const j=await r.json(),f={};
+        (j.models||[]).forEach(m=>{if(!(m.supportedGenerationMethods||[]).includes('generateContent'))return;const n=String(m.name).replace(/^models\//,''),x=n.match(/^gemini-(\d+(?:\.\d+)?)-flash(-lite)?(-preview[\w.-]*)?$/);if(x)f[n]=parseFloat(x[1])*100-(x[2]?20:0)-(x[3]?8:0)});
+        const names=Object.keys(f).sort((a,b)=>f[b]-f[a]);if(names.length){cands=cands.concat(names);try{localStorage.setItem('mittu_ai_models',JSON.stringify({t:Date.now(),n:names}))}catch(e){}}}finally{clearTimeout(to)}}
+  }catch(e){}
+  cands=cands.concat(['gemini-flash-latest','gemini-2.5-flash','gemini-2.0-flash']);
+  cands=[...new Set(cands)].slice(0,4);
+  let last='';
+  for(const m of cands){
+    if(55000-(Date.now()-t0)<5000)break;
+    let r=await post(m,true);
+    if(r.http===400&&r.j&&r.j.error&&/think/i.test(r.j.error.message||''))r=await post(m,false);
+    const t=r.j&&r.j.candidates&&r.j.candidates[0]&&r.j.candidates[0].content&&r.j.candidates[0].content.parts&&r.j.candidates[0].content.parts[0]&&r.j.candidates[0].content.parts[0].text;
+    if(r.http===200&&t){let p=null;try{p=JSON.parse(t)}catch(e){}if(p&&typeof p==='object'){try{localStorage.setItem('mittu_ai_model',m)}catch(e){}return p}}
+    const msg=r.http===0?('network '+r.err):((r.j&&r.j.error&&r.j.error.message)||'no answer');
+    last=m+' '+r.http+': '+String(msg).slice(0,120);tried.push(m.replace(/^gemini-/,'')+' '+r.http);
+    try{if(localStorage.getItem('mittu_ai_model')===m)localStorage.removeItem('mittu_ai_model')}catch(e){}
+    if(r.http===401||(r.http===400&&/api key/i.test(String(msg))))break;
+  }
+  throw new Error(last+(tried.length?' [try kiye: '+tried.join(', ')+']':''));
+}
 async function geminiScan(file){
   const isPdf=file.type==='application/pdf'||/\.pdf$/i.test(file.name);
   let mime,data;
@@ -790,6 +832,8 @@ async function geminiScan(file){
   else{const c=await fileToCanvas(file);mime='image/jpeg';data=c.toDataURL('image/jpeg',0.85).split(',')[1]}
   const stock=sellable().map(it=>({id:it.id,name:it.name,hindi:it.hindi||'',units:it.v.map(x=>unitTxt(x.u))}));
   const payload=JSON.stringify({mime,data,items:stock});
+  let directErr='';
+  if(AI_DIRECT_KEY){try{return await directScan(mime,data,stock)}catch(e){directErr='seedha: '+(e.message||e)}}
   let urls=AI_URLS.slice();
   try{const m=localStorage.getItem('mittu_ai_url');if(m&&urls.includes(m))urls=[m].concat(urls.filter(u=>u!==m))}catch(e){}
   let aiErr='',netErr='';
@@ -804,7 +848,7 @@ async function geminiScan(file){
       if(j&&j.tried&&j.tried.length)aiErr+=' [try kiye: '+j.tried.map(t=>String(t[1]).replace(/^gemini-/,'')+' '+t[2]).join(', ')+']';
     }finally{clearTimeout(to)}
   }
-  throw new Error(aiErr||netErr||'AI server nahi mila');
+  throw new Error([directErr,aiErr||netErr||'AI server nahi mila'].filter(Boolean).join(' | '));
 }
 function fromGemini(d){
   const rows=[],miss=[];
@@ -849,6 +893,7 @@ document.addEventListener('click',e=>{
   const b=t.closest('button');if(!b)return;
   if(b.id==='plusBtn'){$('#pmenu').classList.toggle('show');return}
   if(b.id==='mBill'){closeMenu();openBill();return}
+  if(b.id==='mKey'){closeMenu();const k=prompt('Gemini API key paste karein (AI Studio > Copy key). Hatane ke liye khali chhodein.',AI_DIRECT_KEY||'');if(k!==null){AI_DIRECT_KEY=k.trim();try{localStorage.setItem('mittu_ai_key',AI_DIRECT_KEY);localStorage.removeItem('mittu_ai_model')}catch(e){}alert(AI_DIRECT_KEY?'AI key save ho gayi. Ab file upload karke dekhein.':'AI key hata di gayi.')}return}
   if(b.id==='mUp'){closeMenu();$('#fileIn').click();return}
   if(b.id==='bAdd'){bill.push(newRow());renderBill();const l=document.querySelectorAll('#bRows .bi');l[l.length-1].focus();return}
   if(b.id==='bPay'){billGo();return}
