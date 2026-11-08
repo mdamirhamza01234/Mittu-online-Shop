@@ -246,7 +246,7 @@ body:has(.page.show)::before{content:'';position:fixed;inset:0;background:rgba(0
     <label for="fName">Aapka naam</label><input id="fName" autocomplete="name" maxlength="60">
     <label for="fPhone">Mobile number (10 digit)</label><input id="fPhone" type="tel" inputmode="numeric" autocomplete="tel-national" maxlength="10">
     <label for="fAddr">Pura pata (gaon / mohalla / landmark)</label><textarea id="fAddr" rows="3" maxlength="250" autocomplete="street-address"></textarea>
-    <button type="button" id="geoBtn" style="margin:8px 0 2px;width:100%;padding:11px 10px;border-radius:10px;border:1.5px solid #1a73e8;background:#e8f0fe;color:#0b57d0;font-weight:700;font-size:14px">📍 Meri location bhejein (delivery ke liye)</button>
+    <button type="button" id="geoBtn" style="margin:8px 0 2px;width:100%;padding:11px 10px;border-radius:10px;border:1.5px solid #1a73e8;background:#e8f0fe;color:#0b57d0;font-weight:700;font-size:14px">📍 Meri location bhejein (zaroori)</button>
     <div id="geoSt" style="font-size:12.5px;color:#555;margin-bottom:6px"></div>
     <label for="fNote">Dukaandar ke liye note (optional)</label><input id="fNote" maxlength="120">
     <label>Payment</label>
@@ -512,9 +512,10 @@ async function placeOrder(){
   const total=Math.round(L.reduce((a,l)=>a+l.p*l.q,0)*100)/100;
   const order={id:newId(),name,phone,address:addr,note,pay,items:L.map(l=>({id:l.it.id,name:l.it.name,hindi:l.it.hindi||'',unit:l.u,price:l.p,qty:l.q,total:Math.round(l.p*l.q*100)/100})),total,status:'new',ts:Date.now(),src:'shop'};
   if(pay==='ONLINE'){order.payStatus='pending';const pu=($('#fUpi').value||'').trim();if(pu)order.payerUpi=pu}
-  const btn=$('#placeBtn');btn.disabled=true;btn.textContent='Bhej rahe hain…';err.textContent='';
-  if(!GEO){GEO=await getGeo(5000)}
-  if(GEO){order.lat=GEO.lat;order.lng=GEO.lng;order.acc=GEO.acc}
+  const btn=$('#placeBtn');btn.disabled=true;btn.textContent='Location le rahe hain…';err.textContent='';
+  if(!GEO){GEO=await getGeo(20000)}
+  if(!GEO){err.textContent='📍 Location ke bina order nahi ho sakta. Phone ki Location ON karein aur permission "Allow" karein, phir dobara Order Karein dabayein.';btn.disabled=false;btn.textContent=pay==='ONLINE'?'Order Karein aur Pay Karein':'Order Karein';const gs=document.getElementById('geoSt');if(gs){gs.style.color='#b3261e';gs.textContent='Location zaroori hai — upar "📍 Meri location bhejein" dabayein.'}return}
+  order.lat=GEO.lat;order.lng=GEO.lng;order.acc=GEO.acc;btn.textContent='Bhej rahe hain…'
   try{
     if(!FB)throw new Error('offline');
     await Promise.race([FB.set(FB.push(FB.ref(FB.db,'shopOrders')),order),new Promise((_,r)=>setTimeout(()=>r(new Error('timeout')),15000))]);

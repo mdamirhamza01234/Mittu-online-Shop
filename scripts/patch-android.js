@@ -23,4 +23,12 @@ if (!gradle.includes('signingConfigs')) {
   gradle = gradle.replace(/(buildTypes\s*\{\s*release\s*\{)/, '$1\n            signingConfig signingConfigs.release');
   fs.writeFileSync(gradlePath, gradle);
 }
+// Location permission (order ke saath GPS zaroori hai)
+const manifestPath = path.join(appDir, 'src', 'main', 'AndroidManifest.xml');
+let manifest = fs.readFileSync(manifestPath, 'utf8');
+['android.permission.ACCESS_FINE_LOCATION', 'android.permission.ACCESS_COARSE_LOCATION'].forEach(p => {
+  if (!manifest.includes(p)) manifest = manifest.replace('</manifest>', `    <uses-permission android:name="${p}" />\n</manifest>`);
+});
+if (!manifest.includes('android.hardware.location.gps')) manifest = manifest.replace('</manifest>', '    <uses-feature android:name="android.hardware.location.gps" android:required="false" />\n</manifest>');
+fs.writeFileSync(manifestPath, manifest);
 console.log('Android project patch ho gaya');
