@@ -186,6 +186,20 @@ body:has(.page.show)::before{content:'';position:fixed;inset:0;background:rgba(0
 .sg .none{padding:10px 12px;font-size:13px;color:var(--mut)}
 .badd{margin:4px 16px 0;width:calc(100% - 32px);height:46px;border-radius:12px;border:1.5px dashed var(--blue);color:var(--blue);font-weight:800;font-size:15px}
 @media(min-width:900px){.pmenu{right:32px}}
+
+/* ---- Dusri dukaan (Associated Retailers) ---- */
+.sbar{display:none;align-items:center;justify-content:space-between;gap:8px;margin:8px 10px 0;padding:10px 12px;background:#fff;border:1.5px solid #cdb8f0;border-radius:14px}
+.sbar.on{display:flex}.sbar b{display:block;font-size:15px}.sbar small{color:#6b6475;font-size:12px}
+.sbar button{flex:none;border:1.5px solid #6b3fc4;color:#6b3fc4;background:#fff;border-radius:10px;padding:7px 10px;font-weight:700;font-size:12.5px}
+.tab.storetab .ti{background:#fff;border:2px solid #6b3fc4}
+.csoon{width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#fff;color:#8a8494;font-size:14px;font-weight:700;text-align:center;font-family:inherit}
+.pic.sp{background:#fff !important}
+.sg{margin:14px 12px 4px;font-weight:800;font-size:15px;color:#3a2a5c}
+.srow{display:flex;align-items:center;gap:12px;width:calc(100% - 24px);margin:6px 12px;padding:12px;border:1px solid var(--line);border-radius:14px;background:#fff;text-align:left}
+.srow .se{font-size:26px;width:44px;height:44px;border-radius:50%;background:#f1eef5;display:flex;align-items:center;justify-content:center;flex:none}
+.srow b{display:block;font-size:15px}.srow small{color:#6b6475;font-size:12.5px}
+.srow .sn{margin-left:auto;font-weight:800;color:#6b3fc4;white-space:nowrap}
+.srow.off{opacity:.55}
 </style>
 </head>
 <body>
@@ -205,6 +219,7 @@ body:has(.page.show)::before{content:'';position:fixed;inset:0;background:rgba(0
   <button id="mKey"><span>🔑</span><div>AI key daalein<small>Sirf is phone mein save hogi</small></div></button>
   <button id="mUp"><span>📤</span><div>File upload karein<small>Photo ya PDF se bill bhar jayega</small></div></button>
 </div></div>
+    <div class="sbar" id="storeBar"></div>
     <div class="tabs" id="tabs"></div>
   </div>
   <div id="main"></div>
@@ -218,6 +233,11 @@ body:has(.page.show)::before{content:'';position:fixed;inset:0;background:rgba(0
   <button data-view="again"><span class="i">🔁</span>Buy Again</button>
   <button data-go="cart"><span class="i">🛒</span>Cart<span class="badge" id="b2">0</span></button>
 </nav>
+
+<div class="page" id="pStore">
+  <div class="ph"><button data-back aria-label="Back" id="storeBack">←</button><h2 id="storeTitle">Dukaan chunein</h2></div>
+  <div id="storeBody"></div>
+</div>
 
 <div class="page" id="pBill">
   <div class="ph"><button data-back aria-label="Back">←</button><h2>Bill banayen</h2></div>
@@ -325,6 +345,7 @@ let toastT;function toast(m){const t=$('#toast');t.textContent=m;t.classList.add
 let items=[],byId=new Map(),isLive=false;
 let liveRaw=load('mittu_shop_live',null);
 let cart=load('mittu_shop_cart',{});
+function saveCart(){save(ST?'mittu_shop_cart_'+ST.rid:'mittu_shop_cart',cart)}
 let hist=load('mittu_shop_orders',[]);
 const sel={};
 let S={view:'home',cat:'all',q:''};
@@ -372,13 +393,13 @@ function cardHTML(it){
   const cat=CATMAP[it.cat]||CATS[CATS.length-1];
   const vi=Math.min(sel[it.id]||0,Math.max(it.v.length-1,0));const v=it.v[vi];
   const em=emojiFor(it.name,cat);
-  const pic=it.img?`<img loading="lazy" src="${esc(it.img)}" alt="" onerror="this.replaceWith(document.createTextNode('${em}'))">`:em;
+  const pic=it.store?(it.img?`<img loading="lazy" src="${esc(it.img)}" alt="" onerror="this.outerHTML='<div class=csoon>Coming soon</div>'">`:'<div class="csoon">Coming soon</div>'):(it.img?`<img loading="lazy" src="${esc(it.img)}" alt="" onerror="this.replaceWith(document.createTextNode('${em}'))">`:em);
   let chip;
   if(!it.live)chip=`<span class="chip" style="max-width:58%">${esc(basisLabel(it.basis))}</span>`;
   else if(it.v.length>1)chip=`<select class="chip" data-vsel="${esc(it.id)}" aria-label="Unit">${it.v.map((x,i)=>`<option value="${i}"${i===vi?' selected':''}>${esc(uLabel(x.u))}</option>`).join('')}</select>`;
   else chip=`<span class="chip">${esc(uLabel(v.u))}</span>`;
   const price=v?`<div class="price">${inr(v.p)}</div>`:'<div class="price" style="visibility:hidden">₹0</div>';
-  return `<div class="card${it.s?'':' off'}${it.live?'':' soonc'}" data-card="${esc(it.id)}"><div class="pw"><div class="pic" style="background:${cat.bg}">${pic}<div class="strip">${chip}</div></div><div class="act">${actHTML(it)}</div></div>${price}<div class="nm">${esc(it.name)}</div>${it.hindi?`<div class="hi">${esc(it.hindi)}</div>`:''}</div>`;
+  return `<div class="card${it.s?'':' off'}${it.live?'':' soonc'}" data-card="${esc(it.id)}"><div class="pw"><div class="pic${it.store?' sp':''}" style="background:${cat.bg}">${pic}<div class="strip">${chip}</div></div><div class="act">${actHTML(it)}</div></div>${price}<div class="nm">${esc(it.name)}</div>${it.hindi?`<div class="hi">${esc(it.hindi)}</div>`:''}</div>`;
 }
 function repaint(id){
   const it=byId.get(id);if(!it)return;
@@ -388,7 +409,7 @@ function catItems(c){return items.filter(i=>i.cat===c)}
 function usedCats(){return CATS.filter(c=>catItems(c.id).length)}
 function renderTabs(){
   const cs=usedCats();
-  $('#tabs').innerHTML=`<button class="tab${S.cat==='all'?' on':''}" data-cat="all"><span class="ti">🏠</span>Sab</button>`+cs.map(c=>`<button class="tab${S.cat===c.id?' on':''}" data-cat="${c.id}"><span class="ti">${c.e}</span>${esc(c.n)}</button>`).join('');
+  $('#tabs').innerHTML=`<button class="tab${S.cat==='all'?' on':''}" data-cat="all"><span class="ti">🏠</span>Sab</button><button class="tab storetab" data-storepick="1"><span class="ti">🏬</span>${ST?'Store badlein':'Store'}</button>`+cs.map(c=>`<button class="tab${S.cat===c.id?' on':''}" data-cat="${c.id}"><span class="ti">${c.e}</span>${esc(c.n)}</button>`).join('');
 }
 const BANNERS=[
  {"t": "Dry Fruits & Mewa", "s": "Badam, kaju, pista aur rozana ke masale", "g": "linear-gradient(135deg,#f08a24,#e2492d)", "i": "img/banner/dry.jpg", "c": "c10", "ov": "linear-gradient(90deg,rgba(60,25,0,.82) 0%,rgba(60,25,0,.55) 45%,rgba(60,25,0,.05) 100%)"},
@@ -439,13 +460,16 @@ function render(){
     const l=[...seen.values()];
     h=l.length?`<section class="sec"><div class="sh"><h2>🔁 Dobara kharidein</h2></div><div class="grid">${l.map(cardHTML).join('')}</div></section>`:'<div class="empty"><b>🧺</b>Abhi koi purana order nahi hai.<br>Pehla order karte hi saman yahan dikhega.</div>';
   }else if(S.cat==='all'){
-    h=(isLive?'':'<div class="note">⏳ Dukaan ka stock aur daam abhi update ho rahe hain. Thodi der baad dobara dekhein — tab tak saman ki list dekh sakte hain.</div>');
-    h+='<div class="banners" id="bn">'+BANNERS.map(b=>`<button class="bn" style="background:${b.ov||'linear-gradient(90deg,rgba(0,0,0,.34) 0%,rgba(0,0,0,.18) 40%,rgba(0,0,0,0) 62%)'},url(${b.i}) ${b.ov?'center':'right center'}/cover no-repeat,${b.g}" data-cat="${b.c}"><b>${esc(b.t)}</b><span>${esc(b.s)}</span></button>`).join('')+'</div>';
+    h=(isLive||ST?'':'<div class="note">⏳ Dukaan ka stock aur daam abhi update ho rahe hain. Thodi der baad dobara dekhein — tab tak saman ki list dekh sakte hain.</div>');
+    if(!ST)h+='<div class="banners" id="bn">'+BANNERS.map(b=>`<button class="bn" style="background:${b.ov||'linear-gradient(90deg,rgba(0,0,0,.34) 0%,rgba(0,0,0,.18) 40%,rgba(0,0,0,0) 62%)'},url(${b.i}) ${b.ov?'center':'right center'}/cover no-repeat,${b.g}" data-cat="${b.c}"><b>${esc(b.t)}</b><span>${esc(b.s)}</span></button>`).join('')+'</div>';
     usedCats().forEach(c=>{h+=sec(c,catItems(c.id).slice(0,6),catItems(c.id).length>6)});
+    if(ST&&!items.length)h+='<div class="empty"><b>🏬</b>Is dukaan ne abhi saman nahi dala hai.<br>Thodi der baad dekhein.</div>';
   }else{
     const c=CATMAP[S.cat];h=c?sec(c,catItems(c.id),false):'';
   }
   m.innerHTML=h;
+  {const h1=document.querySelector('header h1,.top h1,h1'),sub=document.querySelector('.sub'),lv=$('#live');if(h1){if(!h1.dataset.o)h1.dataset.o=h1.textContent;h1.textContent=ST?ST.name:h1.dataset.o}if(sub){if(!sub.dataset.o)sub.dataset.o=sub.innerHTML;sub.textContent=ST?ST.type:'';if(!ST)sub.innerHTML=sub.dataset.o}if(lv)lv.style.display=ST?'none':''}
+  const sb=$('#storeBar');if(sb){sb.classList.toggle('on',!!ST);sb.innerHTML=ST?`<div><b>🏬 ${esc(ST.name)}</b><small>${esc(ST.type)} · is dukaan ka apna saman</small></div><button data-storeleave="1">✕ Mittu Shop</button>`:''}
   document.querySelectorAll('#nav [data-view]').forEach(b=>b.classList.toggle('on',b.dataset.view===S.view&&!q));
   bars();
 }
@@ -466,7 +490,7 @@ function setQty(id,vi,d){
   const it=byId.get(id);if(!it||!it.v[vi])return;
   const u=it.v[vi].u,k=ckey(id,u);const cur=cart[k]?cart[k].q:0;const q=Math.max(0,Math.min(99,cur+d));
   if(q===0)delete cart[k];else cart[k]={id,u,q,name:it.name,hindi:it.hindi};
-  save('mittu_shop_cart',cart);repaint(id);bars();if($('#pCart').classList.contains('show'))renderCart();
+  saveCart();repaint(id);bars();if($('#pCart').classList.contains('show'))renderCart();
 }
 function renderCart(){
   const L=lines();const B=$('#cartBody');
@@ -487,7 +511,9 @@ function openCart(){renderCart();openPage('#pCart')}
 function openCo(){
   const t=lines().filter(l=>l.ok).reduce((a,l)=>a+l.p*l.q,0);if(!t){toast('Cart mein saman chunein');return}
   const p=load('mittu_shop_profile',{});$('#fName').value=p.name||'';$('#fPhone').value=p.phone||'';$('#fAddr').value=p.addr||'';
-  $('#coTot').textContent=inr(t);$('#coErr').textContent='';openPage('#pCo');
+  $('#coTot').textContent=inr(t);$('#coErr').textContent='';
+  {const po=document.querySelector('.payon');const hide=!!(ST&&!ST.upi);if(po)po.style.display=hide?'none':'';if(hide){const c=document.querySelector('input[name=pay][value=COD]');if(c){c.checked=true;$('#upiWrap').style.display='none';$('#placeBtn').textContent='Order Karein'}}}
+  openPage('#pCo');
 }
 /* ---------- order ---------- */
 let FB=null;
@@ -511,6 +537,7 @@ async function placeOrder(){
   if(pay==='ONLINE'){const pu=($('#fUpi').value||'').trim();if(pu&&!/^[A-Za-z0-9._-]{2,}@[A-Za-z][A-Za-z0-9]{1,}$/.test(pu)){err.textContent='UPI ID sahi likhein (jaise name@okaxis) ya khali chhod dein.';return}}
   const total=Math.round(L.reduce((a,l)=>a+l.p*l.q,0)*100)/100;
   const order={id:newId(),name,phone,address:addr,note,pay,items:L.map(l=>({id:l.it.id,name:l.it.name,hindi:l.it.hindi||'',unit:l.u,price:l.p,qty:l.q,total:Math.round(l.p*l.q*100)/100})),total,status:'new',ts:Date.now(),src:'shop'};
+  if(ST){order.store=ST.name;order.storeId=ST.rid}
   if(pay==='ONLINE'){order.payStatus='pending';const pu=($('#fUpi').value||'').trim();if(pu)order.payerUpi=pu}
   const btn=$('#placeBtn');btn.disabled=true;btn.textContent='Location le rahe hain…';err.textContent='';
   if(!GEO){GEO=await getGeo(20000)}
@@ -518,10 +545,10 @@ async function placeOrder(){
   order.lat=GEO.lat;order.lng=GEO.lng;order.acc=GEO.acc;btn.textContent='Bhej rahe hain…'
   try{
     if(!FB)throw new Error('offline');
-    await Promise.race([FB.set(FB.push(FB.ref(FB.db,'shopOrders')),order),new Promise((_,r)=>setTimeout(()=>r(new Error('timeout')),15000))]);
+    await Promise.race([FB.set(FB.push(FB.ref(FB.db,ST?'retailerOrders/'+ST.rid:'shopOrders')),order),new Promise((_,r)=>setTimeout(()=>r(new Error('timeout')),15000))]);
     save('mittu_shop_profile',{name,phone,addr});
     hist.push({id:order.id,ts:order.ts,total,items:order.items.map(i=>({id:i.id,name:i.name}))});hist=hist.slice(-30);save('mittu_shop_orders',hist);
-    cart={};save('mittu_shop_cart',cart);$('#okId').textContent='Order no: '+order.id;
+    cart={};saveCart();$('#okId').textContent='Order no: '+order.id;
     render();
     if(pay==='ONLINE')openPay(order);else showOk();
   }catch(e){err.textContent='Order nahi ja paya. Internet check karke dobara koshish karein.'}
@@ -529,7 +556,7 @@ async function placeOrder(){
 }
 
 /* ---------- Online payment (UPI) ---------- */
-const UPI_ID='7303714309@axl',UPI_NAME='MITTU WHOLESALER & RETAILER';
+const UPI0='7303714309@axl',UPI_NAME0='MITTU WHOLESALER & RETAILER';let UPI_ID=UPI0,UPI_NAME=UPI_NAME0;
 let payCtx=null;
 function upiQuery(){const o=payCtx||{};return 'pa='+UPI_ID+'&pn='+encodeURIComponent(UPI_NAME)+'&am='+Number(o.total||0).toFixed(2)+'&cu=INR&tn='+encodeURIComponent('Order '+(o.id||''))}
 function upiUrl(app){
@@ -577,7 +604,7 @@ function qrDownload(){
 }
 async function qrShare(){
   const c=qrCardCanvas();if(!c){toast('Pehle QR dikhayein');return}
-  const text='Mittu Wholesaler ko '+inr(payCtx.total)+' pay karein (Order '+payCtx.id+'). UPI ID: '+UPI_ID;
+  const text=(ST?ST.name:'Mittu Wholesaler')+' ko '+inr(payCtx.total)+' pay karein (Order '+payCtx.id+'). UPI ID: '+UPI_ID;
   try{
     const blob=await new Promise(r=>c.toBlob(r,'image/png'));
     const f=new File([blob],'Mittu-Pay-'+payCtx.id+'.png',{type:'image/png'});
@@ -600,8 +627,9 @@ document.addEventListener('click',e=>{
   if(t.dataset.add!==undefined){setQty(t.dataset.add,+t.dataset.vi,1);return}
   if(t.dataset.plus!==undefined){setQty(t.dataset.plus,+t.dataset.vi,1);return}
   if(t.dataset.minus!==undefined){setQty(t.dataset.minus,+t.dataset.vi,-1);return}
-  if(t.dataset.rm!==undefined){delete cart[t.dataset.rm];save('mittu_shop_cart',cart);renderCart();bars();return}
+  if(t.dataset.rm!==undefined){delete cart[t.dataset.rm];saveCart();renderCart();bars();return}
   if(t.dataset.go==='cart'){openCart();return}
+  if(t.id==='storeBack'&&SV){SV=null;renderStorePage();return}
   if(t.dataset.back!==undefined){if(t.dataset.back==='cart')openCart();else openPage(null);return}
   if(t.id==='goCo'){openCo();return}
   if(t.id==='placeBtn'){placeOrder();return}
@@ -620,6 +648,87 @@ document.addEventListener('click',e=>{
 document.addEventListener('change',e=>{if(e.target.name==='pay'){$('#upiWrap').style.display=e.target.value==='ONLINE'?'block':'none'}if(e.target.name==='pay')$('#placeBtn').textContent=e.target.value==='ONLINE'?'Order Karein aur Pay Karein':'Order Karein';const s=e.target.closest('[data-vsel]');if(s){sel[s.dataset.vsel]=+s.value;repaint(s.dataset.vsel)}});
 let qT;$('#q').addEventListener('input',e=>{clearTimeout(qT);qT=setTimeout(()=>{S.q=e.target.value;render()},180)});
 setInterval(()=>{const b=$('#bn');if(!b||document.hidden)return;const w=b.firstElementChild?b.firstElementChild.offsetWidth+10:0;if(!w)return;b.scrollTo({left:(b.scrollLeft+w>b.scrollWidth-w/2)?0:b.scrollLeft+w,behavior:'smooth'})},4500);
+
+/* ---------- Dusri dukaan (Mittu Associated Retailer) ---------- */
+let RIDX={},ST=null,stUnsub=null,SV=null;
+const MAINCATS=CATS.slice();
+function setCats(a){CATS.length=0;a.forEach(c=>CATS.push(c));Object.keys(CATMAP).forEach(k=>delete CATMAP[k]);CATS.forEach(c=>CATMAP[c.id]=c)}
+const STORE_GROUPS=[
+["🍽️ Khane-Peene aur Daily Needs",[["Grocery Store","Kirana Dukan","🛒"],["Vegetable Store","Sabji Dukan","🥬"],["Fruit Store","Phal Dukan","🍎"],["Fish Store","Machli Dukan","🐟"],["Chicken & Meat Store","Chicken-Mutton Dukan","🍗"],["Milk & Dairy Store","Doodh Dairy","🥛"],["Sweet & Snacks Store","Mithai Aur Namkeen Dukan","🍬"],["Bakery & Cake Store","Bread Aur Cake Dukan","🎂"],["Dry Fruits & Spice Store","Mewa Aur Masale Ki Dukan","🌰"],["Pan & Mouth Freshener Store","Paan Dukan","🌿"]]],
+["👗 Kapde aur Fashion",[["Clothing / Apparel Store","Kapra Dukan / Cloth House","👕"],["Readymade Garments Store","Sile-Silae Kapdo Ki Dukan","👔"],["Designer Boutique Store","Ladies Boutique / Suit-Saree","👗"],["Footwear Store","Joota-Chappal Dukan","👟"],["Cosmetic & Beauty Store","Sringaar Dukan / Makeup Shop","💄"],["Jewellery Store","Sunar Ki Dukan","💍"],["Bangles & Accessories Store","Chudi Dukan","📿"]]],
+["📚 Padhai aur Sehat",[["Medical Store / Pharmacy","Dawai Dukan / Chemist","💊"],["Book Store","Kitab Dukan / Book Stall","📚"],["Stationery Store","Copy-Pen Ki Dukan","✏️"],["Optical Store","Chashma Dukan","👓"],["Surgical & Health Equipment Store","Medical Ka Samaan","🩺"]]],
+["🏠 Ghar aur Construction",[["Hardware Store","Keel, Kanta Aur Tools","🔧"],["Sanitary & Plumbing Store","Pipe Aur Tiles Ki Dukan","🚰"],["Electrical Store","Bijli Ka Samaan / Wires","💡"],["Paint Store","Rang-Rogan Ki Dukan","🎨"],["Utensil Store","Bartan Dukan","🍳"],["Furniture Store","Sofa, Bed Aur Table Dukan","🛋️"],["Home Decor Store","Parda Aur Gaddiyan","🪟"]]],
+["📱 Electronics aur Gadgets",[["Mobile & Gadget Store","Naya Phone Aur Accessories","📱"],["Mobile Repairing & Accessories Store","Mobile Banane Waali Dukan","🛠️"],["Electronic Appliance Store","TV, Fridge, AC Ki Dukan","📺"],["Computer & Laptop Store","Computer Aur Parts","💻"],["Camera & Photo Studio Store","Photo Studio","📷"]]],
+["🎁 Khel, Entertainment aur Gifts",[["Toy Store","Khilona Dukan","🧸"],["Gift & Greeting Store","Gift Dukan","🎁"],["Sports Goods Store","Balla, Football Aur Gym Ka Samaan","⚽"],["Pooja Samagri Store","Pooja Ka Samaan","🪔"],["Pet Food & Care Store","Pet Food Aur Care Samaan","🐾"]]]
+];
+const STORE_EM={};STORE_GROUPS.forEach(g=>g[1].forEach(t=>STORE_EM[t[0]]=t[2]));
+function setStoreSec(){}
+function ridxByType(){const m={};Object.keys(RIDX).forEach(rid=>{const r=RIDX[rid];if(r&&r.name&&r.type)(m[r.type]=m[r.type]||[]).push(Object.assign({rid},r))});return m}
+function renderStorePage(){
+  const B=$('#storeBody'),m=ridxByType();
+  if(SV){
+    $('#storeTitle').textContent=SV;
+    const L=m[SV]||[];let h='';
+    if(SV==='Grocery Store')h+='<button class="srow" data-storeleave="1"><span class="se">🛒</span><div><b>Mittu Wholesaler & Retailer</b><small>Naugachia & Kursela · Mukhya dukaan</small></div><span class="sn">Kholein ›</span></button>';
+    h+=L.map(r=>`<button class="srow" data-rid="${esc(r.rid)}"><span class="se">${STORE_EM[r.type]||'🏬'}</span><div><b>${esc(r.name)}</b><small>${esc(r.type)}</small></div><span class="sn">Kholein ›</span></button>`).join('');
+    if(!h)h='<div class="empty"><b>🏬</b>Is type ki koi dukaan abhi judi nahi hai.<br>Jaldi aa rahi hai.</div>';
+    B.innerHTML=h;return;
+  }
+  $('#storeTitle').textContent='Dukaan ka type chunein';
+  const known=new Set();let h='';
+  STORE_GROUPS.forEach(g=>{
+    h+=`<div class="sg">${g[0]}</div>`;
+    g[1].forEach(t=>{known.add(t[0]);const n=(m[t[0]]||[]).length+(t[0]==='Grocery Store'?1:0);
+      h+=`<button class="srow${n?'':' off'}" data-stype="${esc(t[0])}"><span class="se">${t[2]}</span><div><b>${esc(t[0])}</b><small>${esc(t[1])}</small></div><span class="sn">${n?n+(n===1?' dukaan':' dukaan'):'Jaldi'}</span></button>`});
+  });
+  const other=Object.keys(m).filter(k=>!known.has(k));
+  if(other.length){h+='<div class="sg">🏷️ Anya Dukaan</div>';other.forEach(k=>{h+=`<button class="srow" data-stype="${esc(k)}"><span class="se">🏬</span><div><b>${esc(k)}</b></div><span class="sn">${m[k].length} dukaan</span></button>`})}
+  B.innerHTML=h;
+}
+function openStorePage(){SV=null;renderStorePage();openPage('#pStore')}
+function rebuildStore(raw){
+  const cats=new Map(),list=[];
+  if(raw&&typeof raw==='object')Object.entries(raw).forEach(([id,o])=>{
+    if(!o||!o.n)return;
+    const vv=Array.isArray(o.v)?o.v:Object.values(o.v||{});
+    const v=vv.map(x=>({p:Number(x&&x.p)||0,u:String((x&&x.u)||'')})).filter(x=>x.p>0);
+    if(!v.length)return;
+    const cn=String(o.c||'Anya Saman').trim()||'Anya Saman';
+    const cid='k'+cn.toLowerCase().replace(/[^a-z0-9ऀ-ॿ]+/g,'_');
+    if(!cats.has(cid))cats.set(cid,{id:cid,n:cn,e:(ST&&STORE_EM[ST.type])||'🏷️',bg:'#fff'});
+    list.push({id,name:String(o.n),hindi:o.h?String(o.h):'',v,s:!(o.s===0||o.s===false),img:(typeof o.i==='string'&&/^https:\/\//.test(o.i))?o.i:'',live:true,cat:cid,ord:0,basis:'',store:true});
+  });
+  setCats([...cats.values()].sort((a,b)=>a.n.localeCompare(b.n)));
+  items=list.sort((a,b)=>a.name.localeCompare(b.name));byId=new Map(items.map(i=>[i.id,i]));isLive=true;
+}
+function enterStore(rid){
+  const r=RIDX[rid];if(!r){toast('Dukaan nahi mili');return}
+  if(!FB){toast('Internet nahi hai');return}
+  if(stUnsub){stUnsub();stUnsub=null}
+  ST={rid,name:r.name,type:r.type,upi:r.upi||''};
+  UPI_ID=ST.upi;UPI_NAME=String(ST.name).toUpperCase();
+  cart=load('mittu_shop_cart_'+rid,{});
+  S={view:'home',cat:'all',q:''};$('#q').value='';
+  rebuildStore(null);
+  stUnsub=FB.onValue(FB.ref(FB.db,'retailers/'+rid+'/stock'),sn=>{if(!ST||ST.rid!==rid)return;rebuildStore(sn.val());render()},()=>toast('Is dukaan ka stock nahi aa paya'));
+  openPage(null);render();window.scrollTo(0,0);
+}
+function leaveStore(){
+  if(stUnsub){stUnsub();stUnsub=null}
+  ST=null;UPI_ID=UPI0;UPI_NAME=UPI_NAME0;
+  setCats(MAINCATS);cart=load('mittu_shop_cart',{});
+  S={view:'home',cat:'all',q:''};$('#q').value='';
+  rebuild();openPage(null);render();window.scrollTo(0,0);
+}
+document.addEventListener('click',e=>{
+  const t=e.target.closest('[data-storepick],[data-stype],[data-rid],[data-storeleave]');if(!t)return;
+  e.stopPropagation();
+  if(t.dataset.storepick){openStorePage();return}
+  if(t.dataset.stype){SV=t.dataset.stype;renderStorePage();return}
+  if(t.dataset.rid){enterStore(t.dataset.rid);return}
+  if(t.dataset.storeleave){if(ST)leaveStore();else openPage(null);return}
+},true);
+
 /* ---------- + menu: Bill banayen / File upload ---------- */
 const sellable=()=>items.filter(i=>i.live&&i.s&&i.v.length);
 const unitTxt=u=>{u=String(u||'').trim();return u||'pcs'};
@@ -702,7 +811,7 @@ function billGo(){
   }
   if(!rows.length){err.textContent='Kam se kam ek saman jodein.';return}
   rows.forEach(x=>{const k=ckey(x.it.id,x.u);const cur=cart[k]?cart[k].q:0;cart[k]={id:x.it.id,u:x.u,q:r2(cur+x.q),name:x.it.name,hindi:x.it.hindi}});
-  save('mittu_shop_cart',cart);save('mittu_shop_profile',{name,phone,addr});
+  saveCart();save('mittu_shop_profile',{name,phone,addr});
   bill=[newRow()];err.textContent='';bstat('');render();bars();
   openCo();
 }
@@ -952,9 +1061,10 @@ async function initFB(){
     const A=await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js');
     const D=await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js');
     const app=A.initializeApp({apiKey:"AIzaSyDQ-fm6-_bs728n6rcUS-XS9Zl-hqbIQhA",authDomain:"mittu-billing.firebaseapp.com",databaseURL:"https://mittu-billing-default-rtdb.firebaseio.com",projectId:"mittu-billing",storageBucket:"mittu-billing.firebasestorage.app",messagingSenderId:"9778174452",appId:"1:9778174452:web:99b40c599546a5560541a1"});
-    const db=D.getDatabase(app);FB={db,ref:D.ref,set:D.set,push:D.push};
+    const db=D.getDatabase(app);FB={db,ref:D.ref,set:D.set,push:D.push,onValue:D.onValue};
+    D.onValue(D.ref(db,'retailerIndex'),s=>{RIDX=s.val()||{};if($('#pStore').classList.contains('show'))renderStorePage()},()=>{});
     D.onValue(D.ref(db,'.info/connected'),s=>setLiveUI(!!s.val()));
-    D.onValue(D.ref(db,'publicShop/stock'),s=>{liveRaw=s.val();save('mittu_shop_live',liveRaw);rebuild();render();if(!s.exists())$('#live span').textContent='Dukaan ne abhi daam nahi bheje'},e=>{setLiveUI(false);$('#live span').textContent='Daam nahi aa pa rahe ('+((e&&e.code)||'error')+')'});
+    D.onValue(D.ref(db,'publicShop/stock'),s=>{liveRaw=s.val();save('mittu_shop_live',liveRaw);if(!ST){rebuild();render()};if(!s.exists())$('#live span').textContent='Dukaan ne abhi daam nahi bheje'},e=>{setLiveUI(false);$('#live span').textContent='Daam nahi aa pa rahe ('+((e&&e.code)||'error')+')'});
   }catch(e){setLiveUI(false)}
 }
 rebuild();render();setLiveUI(false);initFB();

@@ -28,6 +28,34 @@
         ".write": "!data.exists() && newData.exists()",
         ".validate": "newData.hasChildren(['id','name','phone','address','items','total','ts']) && newData.child('id').isString() && newData.child('name').isString() && newData.child('name').val().length <= 60 && newData.child('phone').isString() && newData.child('phone').val().length == 10 && newData.child('address').isString() && newData.child('address').val().length <= 250 && newData.child('total').isNumber()"
       }
+    },
+    "retailerIndex": {
+      ".read": true,
+      "$uid": {
+        ".write": "auth != null && auth.uid === $uid",
+        ".validate": "newData.hasChildren(['name','type']) && newData.child('name').isString() && newData.child('name').val().length <= 60 && newData.child('type').isString() && newData.child('type').val().length <= 60"
+      }
+    },
+    "retailers": {
+      "$uid": {
+        ".read": true,
+        ".write": "auth != null && auth.uid === $uid"
+      }
+    },
+    "retailerProfiles": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid"
+      }
+    },
+    "retailerOrders": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        "$id": {
+          ".write": "!data.exists() && newData.exists()",
+          ".validate": "newData.hasChildren(['id','name','phone','address','items','total','ts']) && newData.child('id').isString() && newData.child('name').isString() && newData.child('name').val().length <= 60 && newData.child('phone').isString() && newData.child('phone').val().length == 10 && newData.child('address').isString() && newData.child('address').val().length <= 250 && newData.child('total').isNumber()"
+        }
+      }
     }
   }
 }
