@@ -56,6 +56,14 @@
           ".validate": "newData.hasChildren(['id','name','phone','address','items','total','ts']) && newData.child('id').isString() && newData.child('name').isString() && newData.child('name').val().length <= 60 && newData.child('phone').isString() && newData.child('phone').val().length == 10 && newData.child('address').isString() && newData.child('address').val().length <= 250 && newData.child('total').isNumber()"
         }
       }
+    },
+    "deliveryJobs": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "retailerDisplay": {
+      ".read": "auth != null",
+      ".write": "auth != null"
     }
   }
 }
