@@ -201,6 +201,12 @@ body:has(.page.show)::before{content:'';position:fixed;inset:0;background:rgba(0
 .srow .sn{margin-left:auto;font-weight:800;color:#6b3fc4;white-space:nowrap}
 .srow.off{opacity:.55}
 </style>
+<style id="sat-fix">
+:root{--sat:max(env(safe-area-inset-top,0px),var(--safe-area-inset-top,0px))}
+.top{padding-top:calc(14px + var(--sat)) !important}
+.ph{padding-top:calc(12px + var(--sat)) !important}
+body::after{content:'';position:fixed;top:0;left:0;right:0;height:var(--sat);background:var(--lav);z-index:25;pointer-events:none}
+</style>
 </head>
 <body>
 <div id="app">
