@@ -263,6 +263,17 @@ body::after{content:'';position:fixed;top:0;left:0;right:0;height:var(--sat);bac
   <button data-view="you"><span class="i">👤</span>You</button>
 </nav>
 
+<div class="page" id="pPin" style="overflow:hidden">
+  <div class="ph"><button type="button" id="pinBack" aria-label="Back">←</button><h2>Ghar ka pin lagayein</h2></div>
+  <div id="pinMsg" style="padding:8px 14px;font-size:13px;color:#555"></div>
+  <div style="position:relative;height:calc(100vh - 190px);min-height:300px">
+    <div id="pinMap" style="position:absolute;inset:0"></div>
+    <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-100%);font-size:38px;line-height:1;z-index:1000;pointer-events:none;filter:drop-shadow(0 2px 2px rgba(0,0,0,.4))">📍</div>
+    <div style="position:absolute;right:10px;top:10px;z-index:1000;display:flex;flex-direction:column;gap:8px"><button type="button" id="pinSat" style="padding:8px 10px;border-radius:10px;border:1px solid #bbb;background:#fff;font-weight:700;font-size:13px">🛰️ Satellite</button><button type="button" id="pinMe" style="padding:8px 10px;border-radius:10px;border:1px solid #bbb;background:#fff;font-weight:700;font-size:13px">🎯 Meri location</button></div>
+  </div>
+  <div style="padding:10px 14px"><button type="button" class="btn" id="pinOk">✅ Yahi mera ghar hai</button></div>
+</div>
+
 <div class="page" id="pStore">
   <div class="ph"><button data-back aria-label="Back" id="storeBack">←</button><h2 id="storeTitle">Dukaan chunein</h2></div>
   <div id="storeBody"></div>
@@ -589,8 +600,37 @@ document.addEventListener('click',async e=>{
   const b=e.target.closest&&e.target.closest('#geoBtn');if(!b)return;
   const st=document.getElementById('geoSt');b.disabled=true;st.style.color='#555';st.textContent='Location dhoondh rahe hain…';
   const g=await getGeo(12000);b.disabled=false;
-  if(g){GEO=g;st.style.color='#0a7a3d';st.textContent='✅ Location mil gayi (±'+g.acc+' m). Delivery wale ko aapke ghar tak seedha map milega.'}
+  if(g){GEO=g;geoStatus()}
   else{st.style.color='#b3261e';st.textContent='Location nahi mili. Phone ki Location ON karke, browser mein permission Allow karein.'}
+});
+function geoStatus(){
+  const st=document.getElementById('geoSt');if(!st||!GEO)return;
+  if(GEO.pin){st.style.color='#0a7a3d';st.innerHTML='📌 Aapke chune hue pin ki location save hui. Delivery wale ko seedha yahi map milega.';return}
+  if(GEO.acc>20){st.style.color='#b45309';st.innerHTML='⚠️ Location mil gayi par ±'+GEO.acc+' m ka farq hai (sahi nahi). Behtar hai ki map par apne ghar ka pin lagayein.<br><button type="button" id="pinOpen" style="margin-top:6px;width:100%;padding:10px;border-radius:10px;border:1.5px solid #b45309;background:#fff7ed;color:#9a3412;font-weight:700;font-size:14px">📌 Map par pin lagakar ghar chunein</button>'}
+  else{st.style.color='#0a7a3d';st.textContent='✅ Location mil gayi (±'+GEO.acc+' m). Delivery wale ko aapke ghar tak seedha map milega.'}
+}
+/* ---------- Map pin picker (Leaflet + OpenStreetMap) ---------- */
+let PINMAP=null,PINLAYERS=null,PINSAT=false;
+function loadLeaflet(){return new Promise((ok,no)=>{if(window.L)return ok();const l=document.createElement('link');l.rel='stylesheet';l.href='https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css';document.head.appendChild(l);const sc=document.createElement('script');sc.src='https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js';sc.onload=ok;sc.onerror=()=>no(new Error('map load'));document.head.appendChild(sc)})}
+async function openPin(){
+  openPage('#pPin');const msg=$('#pinMsg');msg.textContent='Map khul raha hai…';
+  try{await loadLeaflet()}catch(e){msg.textContent='Map load nahi hua. Internet check karein.';return}
+  msg.textContent='Map ko khiskakar pin ko apne ghar ke upar laayein (zoom karke satellite se ghar pehchanein).';
+  const c=GEO?[GEO.lat,GEO.lng]:[25.0,87.0];
+  if(!PINMAP){
+    PINMAP=L.map('pinMap',{zoomControl:true}).setView(c,18);
+    PINLAYERS={osm:L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}),sat:L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,attribution:'Tiles © Esri'})};
+    PINLAYERS.osm.addTo(PINMAP);
+  }else PINMAP.setView(c,18);
+  setTimeout(()=>PINMAP.invalidateSize(),150);
+}
+document.addEventListener('click',e=>{
+  const t=e.target.closest&&e.target.closest('#pinOpen,#pinBack,#pinOk,#pinSat,#pinMe');if(!t)return;
+  if(t.id==='pinOpen'){openPin();return}
+  if(t.id==='pinBack'){openPage('#pCo');return}
+  if(t.id==='pinSat'&&PINMAP){PINSAT=!PINSAT;PINMAP.removeLayer(PINLAYERS[PINSAT?'osm':'sat']);PINLAYERS[PINSAT?'sat':'osm'].addTo(PINMAP);t.textContent=PINSAT?'🗺️ Normal map':'🛰️ Satellite';return}
+  if(t.id==='pinMe'&&PINMAP){getGeo(10000).then(g=>{if(g)PINMAP.setView([g.lat,g.lng],18);else toast('Location nahi mili')});return}
+  if(t.id==='pinOk'&&PINMAP){const p=PINMAP.getCenter();GEO={lat:+p.lat.toFixed(6),lng:+p.lng.toFixed(6),acc:0,pin:1};openPage('#pCo');geoStatus();toast('Pin save ho gaya');return}
 });
 function newId(){return 'MS'+Date.now().toString(36).slice(-6).toUpperCase()+Math.random().toString(36).slice(2,4).toUpperCase()}
 async function placeOrder(){
@@ -608,7 +648,7 @@ async function placeOrder(){
   const btn=$('#placeBtn');btn.disabled=true;btn.textContent='Location le rahe hain…';err.textContent='';
   if(!GEO){GEO=await getGeo(20000)}
   if(!GEO){err.textContent='📍 Location ke bina order nahi ho sakta. Phone ki Location ON karein aur permission "Allow" karein, phir dobara Order Karein dabayein.';btn.disabled=false;btn.textContent=pay==='ONLINE'?'Order Karein aur Pay Karein':'Order Karein';const gs=document.getElementById('geoSt');if(gs){gs.style.color='#b3261e';gs.textContent='Location zaroori hai — upar "📍 Meri location bhejein" dabayein.'}return}
-  order.lat=GEO.lat;order.lng=GEO.lng;order.acc=GEO.acc;btn.textContent='Bhej rahe hain…'
+  order.lat=GEO.lat;order.lng=GEO.lng;order.acc=GEO.acc;if(GEO.pin)order.pin=1;btn.textContent='Bhej rahe hain…'
   try{
     if(!FB)throw new Error('offline');
     await Promise.race([FB.set(FB.push(FB.ref(FB.db,ST?'retailerOrders/'+ST.rid:'shopOrders')),order),new Promise((_,r)=>setTimeout(()=>r(new Error('timeout')),15000))]);
