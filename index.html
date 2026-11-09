@@ -263,15 +263,22 @@ body::after{content:'';position:fixed;top:0;left:0;right:0;height:var(--sat);bac
   <button data-view="you"><span class="i">👤</span>You</button>
 </nav>
 
-<div class="page" id="pPin" style="overflow:hidden">
-  <div class="ph"><button type="button" id="pinBack" aria-label="Back">←</button><h2>Ghar ka pin lagayein</h2></div>
-  <div id="pinMsg" style="padding:8px 14px;font-size:13px;color:#555"></div>
-  <div style="position:relative;height:calc(100vh - 190px);min-height:300px">
-    <div id="pinMap" style="position:absolute;inset:0"></div>
-    <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-100%);font-size:38px;line-height:1;z-index:1000;pointer-events:none;filter:drop-shadow(0 2px 2px rgba(0,0,0,.4))">📍</div>
-    <div style="position:absolute;right:10px;top:10px;z-index:1000;display:flex;flex-direction:column;gap:8px"><button type="button" id="pinSat" style="padding:8px 10px;border-radius:10px;border:1px solid #bbb;background:#fff;font-weight:700;font-size:13px">🛰️ Satellite</button><button type="button" id="pinMe" style="padding:8px 10px;border-radius:10px;border:1px solid #bbb;background:#fff;font-weight:700;font-size:13px">🎯 Meri location</button></div>
+<div class="page" id="pPin">
+  <div class="ph"><button type="button" id="pinBack" aria-label="Back">←</button><h2>Google Map se ghar ka pin</h2></div>
+  <div style="padding:14px">
+    <ol style="margin:0 0 12px 18px;padding:0;line-height:1.6;font-size:14.5px">
+      <li>Neeche <b>"Google Maps kholein"</b> dabayein.</li>
+      <li>Map mein apne ghar par <b>lamba dabayein</b> — laal pin lagega.</li>
+      <li>Upar jo coordinates dikhte hain (jaise <b>25.388395,87.193987</b>) un par tap karke <b>Copy</b> karein.</li>
+      <li>Is app mein wapas aayein — coordinates <b>apne-aap</b> mil jayenge.</li>
+    </ol>
+    <button type="button" class="btn" id="pinGmap">🗺️ Google Maps kholein</button>
+    <button type="button" id="pinClip" style="margin-top:10px;width:100%;padding:12px;border-radius:12px;border:1.5px solid #0a5db0;background:#fff;color:#0a5db0;font-weight:700;font-size:15px">📋 Copy kiye coordinates lein</button>
+    <div id="pinMsg" style="font-size:13px;margin:10px 0;color:#555"></div>
+    <label for="pinTxt" style="font-size:12.5px;font-weight:700">Ya coordinates yahan paste karein</label>
+    <input id="pinTxt" placeholder="25.388395,87.193987" style="width:100%;box-sizing:border-box;padding:12px;border:1.5px solid var(--line);border-radius:10px;font-size:15px;margin:4px 0 10px">
+    <button type="button" class="btn" id="pinOk">✅ Yahi mera ghar hai</button>
   </div>
-  <div style="padding:10px 14px"><button type="button" class="btn" id="pinOk">✅ Yahi mera ghar hai</button></div>
 </div>
 
 <div class="page" id="pStore">
@@ -606,31 +613,44 @@ document.addEventListener('click',async e=>{
 function geoStatus(){
   const st=document.getElementById('geoSt');if(!st||!GEO)return;
   if(GEO.pin){st.style.color='#0a7a3d';st.innerHTML='📌 Aapke chune hue pin ki location save hui. Delivery wale ko seedha yahi map milega.';return}
-  if(GEO.acc>20){st.style.color='#b45309';st.innerHTML='⚠️ Location mil gayi par ±'+GEO.acc+' m ka farq hai (sahi nahi). Behtar hai ki map par apne ghar ka pin lagayein.<br><button type="button" id="pinOpen" style="margin-top:6px;width:100%;padding:10px;border-radius:10px;border:1.5px solid #b45309;background:#fff7ed;color:#9a3412;font-weight:700;font-size:14px">📌 Map par pin lagakar ghar chunein</button>'}
+  if(GEO.acc>20){st.style.color='#b45309';st.innerHTML='⚠️ Location mil gayi par ±'+GEO.acc+' m ka farq hai (sahi nahi). Behtar hai ki Google Map par apne ghar ka pin lagayein.<br><button type="button" id="pinOpen" style="margin-top:6px;width:100%;padding:10px;border-radius:10px;border:1.5px solid #b45309;background:#fff7ed;color:#9a3412;font-weight:700;font-size:14px">📌 Google Map par pin lagakar ghar chunein</button>'}
   else{st.style.color='#0a7a3d';st.textContent='✅ Location mil gayi (±'+GEO.acc+' m). Delivery wale ko aapke ghar tak seedha map milega.'}
 }
-/* ---------- Map pin picker (Leaflet + OpenStreetMap) ---------- */
-let PINMAP=null,PINLAYERS=null,PINSAT=false;
-function loadLeaflet(){return new Promise((ok,no)=>{if(window.L)return ok();const l=document.createElement('link');l.rel='stylesheet';l.href='https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css';document.head.appendChild(l);const sc=document.createElement('script');sc.src='https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js';sc.onload=ok;sc.onerror=()=>no(new Error('map load'));document.head.appendChild(sc)})}
-async function openPin(){
-  openPage('#pPin');const msg=$('#pinMsg');msg.textContent='Map khul raha hai…';
-  try{await loadLeaflet()}catch(e){msg.textContent='Map load nahi hua. Internet check karein.';return}
-  msg.textContent='Map ko khiskakar pin ko apne ghar ke upar laayein (zoom karke satellite se ghar pehchanein).';
-  const c=GEO?[GEO.lat,GEO.lng]:[25.0,87.0];
-  if(!PINMAP){
-    PINMAP=L.map('pinMap',{zoomControl:true}).setView(c,18);
-    PINLAYERS={osm:L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}),sat:L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,attribution:'Tiles © Esri'})};
-    PINLAYERS.osm.addTo(PINMAP);
-  }else PINMAP.setView(c,18);
-  setTimeout(()=>PINMAP.invalidateSize(),150);
+/* ---------- Google Maps se pin: coordinates clipboard se apne-aap ---------- */
+function parseLL(t){
+  t=String(t||'');
+  const pats=[/@(-?\d{1,2}\.\d{3,})\s*,\s*(-?\d{1,3}\.\d{3,})/,/!3d(-?\d{1,2}\.\d{3,})!4d(-?\d{1,3}\.\d{3,})/,/[?&](?:q|ll|query|destination)=(-?\d{1,2}\.\d{3,})(?:,|%2C)\s*(-?\d{1,3}\.\d{3,})/,/(-?\d{1,2}\.\d{3,})\s*[,;\s]\s*(-?\d{1,3}\.\d{3,})/];
+  for(const p of pats){const m=t.match(p);if(m){const la=+m[1],ln=+m[2];if(Math.abs(la)<=90&&Math.abs(ln)<=180)return{lat:+la.toFixed(6),lng:+ln.toFixed(6)}}}
+  return null;
 }
+function pinApply(ll,fromClip){
+  GEO={lat:ll.lat,lng:ll.lng,acc:0,pin:1};
+  openPage('#pCo');geoStatus();toast('Pin ki location mil gayi: '+ll.lat+', '+ll.lng);
+}
+async function pinReadClip(manual){
+  const msg=$('#pinMsg');
+  try{
+    const t=await navigator.clipboard.readText();const ll=parseLL(t);
+    if(ll){pinApply(ll,true);return true}
+    msg.style.color='#b3261e';msg.textContent='Clipboard mein coordinates nahi mile. Google Map mein pin lagakar upar dikhne wale coordinates (jaise 25.388395,87.193987) copy karein.';
+  }catch(e){
+    if(manual){msg.style.color='#b3261e';msg.textContent='Clipboard padhne ki permission nahi mili. Neeche box mein coordinates paste karein.'}
+  }
+  return false;
+}
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&$('#pPin').classList.contains('show')&&window.__pinWait)pinReadClip(false)});
+window.addEventListener('focus',()=>{if($('#pPin').classList.contains('show')&&window.__pinWait)pinReadClip(false)});
 document.addEventListener('click',e=>{
-  const t=e.target.closest&&e.target.closest('#pinOpen,#pinBack,#pinOk,#pinSat,#pinMe');if(!t)return;
-  if(t.id==='pinOpen'){openPin();return}
-  if(t.id==='pinBack'){openPage('#pCo');return}
-  if(t.id==='pinSat'&&PINMAP){PINSAT=!PINSAT;PINMAP.removeLayer(PINLAYERS[PINSAT?'osm':'sat']);PINLAYERS[PINSAT?'sat':'osm'].addTo(PINMAP);t.textContent=PINSAT?'🗺️ Normal map':'🛰️ Satellite';return}
-  if(t.id==='pinMe'&&PINMAP){getGeo(10000).then(g=>{if(g)PINMAP.setView([g.lat,g.lng],18);else toast('Location nahi mili')});return}
-  if(t.id==='pinOk'&&PINMAP){const p=PINMAP.getCenter();GEO={lat:+p.lat.toFixed(6),lng:+p.lng.toFixed(6),acc:0,pin:1};openPage('#pCo');geoStatus();toast('Pin save ho gaya');return}
+  const t=e.target.closest&&e.target.closest('#pinOpen,#pinBack,#pinGmap,#pinClip,#pinOk');if(!t)return;
+  if(t.id==='pinOpen'){$('#pinMsg').style.color='#555';$('#pinMsg').textContent='';openPage('#pPin');return}
+  if(t.id==='pinBack'){window.__pinWait=false;openPage('#pCo');return}
+  if(t.id==='pinGmap'){
+    const c=GEO?GEO.lat+','+GEO.lng:'25.0,87.0';window.__pinWait=true;
+    window.open('https://www.google.com/maps/search/?api=1&query='+c,'_blank');return}
+  if(t.id==='pinClip'){pinReadClip(true);return}
+  if(t.id==='pinOk'){const ll=parseLL($('#pinTxt').value);const m=$('#pinMsg');
+    if(!ll){m.style.color='#b3261e';m.textContent='Coordinates sahi nahi hain. Jaise: 25.388395,87.193987';return}
+    pinApply(ll);return}
 });
 function newId(){return 'MS'+Date.now().toString(36).slice(-6).toUpperCase()+Math.random().toString(36).slice(2,4).toUpperCase()}
 async function placeOrder(){
