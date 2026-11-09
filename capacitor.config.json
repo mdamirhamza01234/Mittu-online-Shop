@@ -11,7 +11,8 @@
       "*.firebasedatabase.app",
       "*.googleapis.com",
       "www.gstatic.com"
-    ]
+    ],
+    "errorPath": "offline.html"
   },
   "backgroundColor": "#e4bdf6"
 }

@@ -35,6 +35,9 @@ jobs:
           npm install --no-save @capacitor/assets
           npx capacitor-assets generate --android --iconBackgroundColor '#ffffff' --splashBackgroundColor '#ffffff'
 
+      - name: Offline page (app URL)
+        run: sed -i "s|__APP_URL__|$(node -p "require('./capacitor.config.json').server.url")|" www/offline.html
+
       - name: Sync
         run: npx cap sync android
 
