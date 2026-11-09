@@ -378,7 +378,7 @@ function rebuild(){
   live.forEach(it=>{
     const won=it.m&&take.get(it.m.c.n)===it;
     const ref=it.m?it.m.c:(it.fb?it.fb.c:null);
-    it.cat=ref?ref.cat:'c52';it.ord=ref?ref.n+(won?0:0.5):2000;it.basis='';if(!it.img&&it.m)it.img=imgFor(it.m.c.n);items.push(it);
+    it.cat=ref?ref.cat:'c52';it.ord=ref?ref.n+(won?0:0.5):2000;it.basis='';if(it.m){const si=imgFor(it.m.c.n);if(si)it.img=si}items.push(it);
   });
   CATALOG.forEach(c=>{if(!take.has(c.n))items.push({id:'c'+c.n,name:c.name,hindi:'',v:[],s:true,img:imgFor(c.n),cat:c.cat,ord:c.n,live:false,basis:c.basis})});
   items.sort((a,b)=>(b.live-a.live)||(a.ord-b.ord)||a.name.localeCompare(b.name));
