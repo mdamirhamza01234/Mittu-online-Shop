@@ -207,6 +207,28 @@ body:has(.page.show)::before{content:'';position:fixed;inset:0;background:rgba(0
 .ph{padding-top:calc(12px + var(--sat)) !important}
 body::after{content:'';position:fixed;top:0;left:0;right:0;height:var(--sat);background:var(--lav);z-index:25;pointer-events:none}
 </style>
+<style id="you-css">
+.tab.dim{opacity:.55}
+.nav button{font-size:11.5px}
+.you{padding:10px 12px 110px}
+.yc{display:flex;align-items:center;gap:12px;background:#fff;border:1px solid var(--line);border-radius:18px;padding:14px}
+.yav{width:52px;height:52px;border-radius:16px;background:linear-gradient(135deg,#0a5db0,#6b3fc4);color:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;flex:0 0 auto}
+.ytx{flex:1;min-width:0}.ytx b{display:block;font-size:17px}.ytx small{display:block;color:var(--mut);font-size:12.5px;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.yb{border:1.5px solid var(--blue);color:var(--blue);background:#fff;border-radius:18px;padding:7px 12px;font-weight:700;font-size:12.5px;flex:0 0 auto}
+.yform{background:#fff;border:1px solid var(--line);border-radius:16px;padding:12px;margin-top:10px}
+.yform label{display:block;font-size:12.5px;font-weight:700;margin:8px 0 4px}
+.yform input,.yform textarea{width:100%;box-sizing:border-box;padding:11px;border:1.5px solid var(--line);border-radius:10px;font-size:15px}
+.ystats{display:flex;gap:8px;margin:12px 0}.ystats>div{flex:1;background:#fff;border:1px solid var(--line);border-radius:14px;padding:10px 6px;text-align:center;min-width:0}
+.ystats b{display:block;font-size:17px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ystats small{color:var(--mut);font-size:12px}
+.ylinks{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.ylinks button{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:13px;font-size:20px;text-align:left}
+.ylinks button span{font-size:14px;font-weight:700;color:var(--ink)}
+.yh{margin:18px 2px 8px;font-size:17px}
+.yo{background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:8px}
+.yoh{display:flex;justify-content:space-between;font-size:13px}.yoh span{color:var(--mut)}
+.yon{font-size:13.5px;margin:6px 0;color:#444}.yof{display:flex;justify-content:space-between;align-items:center}.yof span{font-weight:800}
+.yempty{background:#fff;border:1px dashed var(--line);border-radius:14px;padding:22px;text-align:center;color:var(--mut)}
+</style>
 </head>
 <body>
 <div id="app">
@@ -238,6 +260,7 @@ body::after{content:'';position:fixed;top:0;left:0;right:0;height:var(--sat);bac
   <button data-view="cats"><span class="i">🗂️</span>Categories</button>
   <button data-view="again"><span class="i">🔁</span>Buy Again</button>
   <button data-go="cart"><span class="i">🛒</span>Cart<span class="badge" id="b2">0</span></button>
+  <button data-view="you"><span class="i">👤</span>You</button>
 </nav>
 
 <div class="page" id="pStore">
@@ -413,7 +436,17 @@ function repaint(id){
 }
 function catItems(c){return items.filter(i=>i.cat===c)}
 function usedCats(){return CATS.filter(c=>catItems(c.id).length)}
+function storeTypeTabs(){
+  const m=ridxByType(),all=[];
+  STORE_GROUPS.forEach(g=>g[1].forEach(t=>all.push({n:t[0],e:t[2],c:(m[t[0]]||[]).length+(t[0]==='Grocery Store'?1:0)})));
+  Object.keys(m).forEach(k=>{if(!all.some(x=>x.n===k))all.push({n:k,e:'🏬',c:m[k].length})});
+  return all.filter(x=>x.c).concat(all.filter(x=>!x.c));
+}
 function renderTabs(){
+  if(!ST){
+    $('#tabs').innerHTML=`<button class="tab${S.cat==='all'&&S.view==='home'?' on':''}" data-cat="all"><span class="ti">🏠</span>Sab</button>`+storeTypeTabs().map(t=>`<button class="tab${t.c?'':' dim'}" data-tabstore="${esc(t.n)}"><span class="ti">${t.e}</span>${esc(t.n.replace(/ Store$/,'').replace(/ \/ .*$/,''))}</button>`).join('');
+    return;
+  }
   const cs=usedCats();
   $('#tabs').innerHTML=`<button class="tab${S.cat==='all'?' on':''}" data-cat="all"><span class="ti">🏠</span>Sab</button><button class="tab storetab" data-storepick="1"><span class="ti">🏬</span>${ST?'Store badlein':'Store'}</button>`+cs.map(c=>`<button class="tab${S.cat===c.id?' on':''}" data-cat="${c.id}"><span class="ti">${c.e}</span>${esc(c.n)}</button>`).join('');
 }
@@ -450,6 +483,31 @@ const BANNERS=[
  {"t": "Joota-Chappal", "s": "Gumboot, Kolhapuri Chappal, Sleeper aur bahut kuch", "g": "linear-gradient(135deg,rgb(198, 49, 73),rgb(158, 64, 31))", "i": "img/banner/c29.webp", "c": "c29"},
  {"t": "Khilone aur Gift Items", "s": "Plastic Car Toy, Football, Tennis Ball aur bahut kuch", "g": "linear-gradient(135deg,rgb(198, 148, 49),rgb(147, 158, 31))", "i": "img/banner/c30.webp", "c": "c30"}
 ];
+function youHTML(){
+  const p=load('mittu_shop_profile',{});
+  const nm=(p.name||'').trim(),ini=(nm[0]||'👤').toUpperCase();
+  const cn=Object.values(cart||{}).length;
+  const ol=hist.slice().reverse();
+  const orders=ol.length?ol.map(o=>{
+    const d=new Date(o.ts||0);const ds=o.ts?d.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}):'';
+    const nmz=(o.items||[]).slice(0,3).map(x=>esc(x.name)).join(', ')+((o.items||[]).length>3?' +'+((o.items||[]).length-3)+' aur':'');
+    return `<div class="yo"><div class="yoh"><b>${esc(o.id||'')}</b><span>${ds}</span></div><div class="yon">${nmz}</div><div class="yof"><span>${inr(o.total||0)}</span><button class="yb" data-view="again">Dobara kharidein</button></div></div>`;
+  }).join(''):'<div class="yempty">Abhi tak koi order nahi. Pehla order karte hi yahan dikhega.</div>';
+  return `<div class="you">
+  <div class="yc"><div class="yav">${esc(ini)}</div><div class="ytx"><b>${esc(nm||'Aapka naam')}</b><small>${esc(p.phone?('📞 '+p.phone):'Mobile number jodein')}</small><small>${esc(p.addr?('📍 '+p.addr):'Pata jodein')}</small></div><button class="yb" id="yEdit">Badlein</button></div>
+  <div class="yform" id="yForm" style="display:none"><label>Naam</label><input id="yName" maxlength="60" value="${esc(nm)}"><label>Mobile (10 digit)</label><input id="yPhone" type="tel" inputmode="numeric" maxlength="10" value="${esc(p.phone||'')}"><label>Pata</label><textarea id="yAddr" rows="2" maxlength="250">${esc(p.addr||'')}</textarea><button class="btn" id="ySave">Save karein</button></div>
+  <div class="ystats"><div><b>${ol.length}</b><small>Orders</small></div><div><b>${cn}</b><small>Cart mein</small></div><div><b>${ST?esc(ST.name):'Mittu'}</b><small>Dukaan</small></div></div>
+  <div class="ylinks"><button data-view="again">🔁<span>Dobara kharidein</span></button><button data-go="cart">🛒<span>Mera Cart</span></button><button data-storepick="1">🏬<span>Dukaan badlein</span></button><button data-view="cats">🗂️<span>Categories</span></button></div>
+  <h3 class="yh">Mere Orders</h3>${orders}</div>`;
+}
+document.addEventListener('click',e=>{
+  if(e.target.id==='yEdit'){const f=$('#yForm');if(f)f.style.display=f.style.display==='none'?'block':'none';return}
+  if(e.target.id==='ySave'){
+    const name=$('#yName').value.trim(),phone=$('#yPhone').value.replace(/\D/g,'').slice(-10),addr=$('#yAddr').value.trim();
+    if(phone&&phone.length!==10){toast('Mobile number 10 digit ka hona chahiye');return}
+    save('mittu_shop_profile',{name,phone,addr});toast('Save ho gaya');render();
+  }
+});
 function sec(c,list,all){return `<section class="sec"><div class="sh"><h2>${c.e} ${esc(c.n)}</h2>${all?`<button class="lnk" data-cat="${c.id}">Sab dekhein ›</button>`:''}</div><div class="grid">${list.map(cardHTML).join('')}</div></section>`}
 function render(){
   renderTabs();
@@ -461,6 +519,8 @@ function render(){
     h=r.length?`<section class="sec"><div class="sh"><h2>"${esc(S.q.trim())}" ke natije</h2></div><div class="grid">${r.map(cardHTML).join('')}</div></section>`:'<div class="empty"><b>🔍</b>Kuch nahi mila. Doosra naam try karein.</div>';
   }else if(S.view==='cats'){
     h='<div class="pg"><h2>Categories</h2></div><div class="cgrid">'+usedCats().map(c=>`<button class="ctile" data-cat="${c.id}" data-view="home"><span class="ci" style="background:${c.bg}">${c.e}</span>${esc(c.n)}<small>${catItems(c.id).length} items</small></button>`).join('')+'</div>';
+  }else if(S.view==='you'){
+    h=youHTML();
   }else if(S.view==='again'){
     const seen=new Map();hist.slice().reverse().forEach(o=>o.items.forEach(x=>{if(!seen.has(x.id)&&byId.has(x.id))seen.set(x.id,byId.get(x.id))}));
     const l=[...seen.values()];
@@ -727,8 +787,9 @@ function leaveStore(){
   rebuild();openPage(null);render();window.scrollTo(0,0);
 }
 document.addEventListener('click',e=>{
-  const t=e.target.closest('[data-storepick],[data-stype],[data-rid],[data-storeleave]');if(!t)return;
+  const t=e.target.closest('[data-storepick],[data-stype],[data-rid],[data-storeleave],[data-tabstore]');if(!t)return;
   e.stopPropagation();
+  if(t.dataset.tabstore){SV=t.dataset.tabstore;renderStorePage();openPage('#pStore');return}
   if(t.dataset.storepick){openStorePage();return}
   if(t.dataset.stype){SV=t.dataset.stype;renderStorePage();return}
   if(t.dataset.rid){enterStore(t.dataset.rid);return}
@@ -1068,7 +1129,7 @@ async function initFB(){
     const D=await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js');
     const app=A.initializeApp({apiKey:"AIzaSyDQ-fm6-_bs728n6rcUS-XS9Zl-hqbIQhA",authDomain:"mittu-billing.firebaseapp.com",databaseURL:"https://mittu-billing-default-rtdb.firebaseio.com",projectId:"mittu-billing",storageBucket:"mittu-billing.firebasestorage.app",messagingSenderId:"9778174452",appId:"1:9778174452:web:99b40c599546a5560541a1"});
     const db=D.getDatabase(app);FB={db,ref:D.ref,set:D.set,push:D.push,onValue:D.onValue};
-    D.onValue(D.ref(db,'retailerIndex'),s=>{RIDX=s.val()||{};if($('#pStore').classList.contains('show'))renderStorePage()},()=>{});
+    D.onValue(D.ref(db,'retailerIndex'),s=>{RIDX=s.val()||{};if(!ST)renderTabs();if($('#pStore').classList.contains('show'))renderStorePage()},()=>{});
     D.onValue(D.ref(db,'.info/connected'),s=>setLiveUI(!!s.val()));
     D.onValue(D.ref(db,'publicShop/stock'),s=>{liveRaw=s.val();save('mittu_shop_live',liveRaw);if(!ST){rebuild();render()};if(!s.exists())$('#live span').textContent='Dukaan ne abhi daam nahi bheje'},e=>{setLiveUI(false);$('#live span').textContent='Daam nahi aa pa rahe ('+((e&&e.code)||'error')+')'});
   }catch(e){setLiveUI(false)}
