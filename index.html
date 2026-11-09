@@ -206,6 +206,7 @@ body:has(.page.show)::before{content:'';position:fixed;inset:0;background:rgba(0
 .top{padding-top:calc(14px + var(--sat)) !important}
 .ph{padding-top:calc(12px + var(--sat)) !important}
 body::after{content:'';position:fixed;top:0;left:0;right:0;height:var(--sat);background:var(--lav);z-index:25;pointer-events:none}
+#pPin2.show{display:flex;flex-direction:column;height:100%;height:100dvh}
 </style>
 <style id="you-css">
 .tab.dim{opacity:.55}
@@ -281,15 +282,15 @@ body::after{content:'';position:fixed;top:0;left:0;right:0;height:var(--sat);bac
   </div>
 </div>
 
-<div class="page" id="pPin2" style="overflow:hidden">
+<div class="page" id="pPin2" style="overflow:hidden;padding-bottom:0">
   <div class="ph"><button type="button" id="pin2Back" aria-label="Back">←</button><h2>Ghar ka pin lagayein</h2></div>
   <div id="pin2Msg" style="padding:8px 14px;font-size:13px;color:#555"></div>
-  <div style="position:relative;height:calc(100vh - 190px);min-height:300px">
+  <div style="position:relative;flex:1 1 auto;min-height:0">
     <div id="pinMap" style="position:absolute;inset:0"></div>
     <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-100%);font-size:38px;line-height:1;z-index:1000;pointer-events:none;filter:drop-shadow(0 2px 2px rgba(0,0,0,.4))">📍</div>
     <div style="position:absolute;right:10px;top:10px;z-index:1000;display:flex;flex-direction:column;gap:8px"><button type="button" id="pinSat" style="padding:8px 10px;border-radius:10px;border:1px solid #bbb;background:#fff;font-weight:700;font-size:13px">🛰️ Satellite</button><button type="button" id="pinMe" style="padding:8px 10px;border-radius:10px;border:1px solid #bbb;background:#fff;font-weight:700;font-size:13px">🎯 Meri location</button></div>
   </div>
-  <div style="padding:10px 14px"><button type="button" class="btn" id="pin2Ok">✅ Yahi mera ghar hai</button></div>
+  <div style="padding:10px 14px calc(22px + env(safe-area-inset-bottom,0px));flex:0 0 auto;background:#fff"><button type="button" class="btn" id="pin2Ok">✅ Yahi mera ghar hai</button></div>
 </div>
 
 <div class="page" id="pStore">
@@ -618,7 +619,7 @@ document.addEventListener('click',async e=>{
   const b=e.target.closest&&e.target.closest('#geoBtn');if(!b)return;
   const st=document.getElementById('geoSt');b.disabled=true;st.style.color='#555';st.textContent='Location dhoondh rahe hain…';
   const g=await getGeo(12000);b.disabled=false;
-  if(g){GEO=g;geoStatus()}
+  if(g){GEO=g;GPS0={lat:g.lat,lng:g.lng,acc:g.acc};geoStatus()}
   else{st.style.color='#b3261e';st.textContent='Location nahi mili. Phone ki Location ON karke, browser mein permission Allow karein.'}
 });
 function geoStatus(){
@@ -664,7 +665,7 @@ document.addEventListener('click',e=>{
     pinApply(ll);return}
 });
 /* ---------- Map pin picker (Leaflet + OpenStreetMap) ---------- */
-let PINMAP=null,PINLAYERS=null,PINSAT=false;
+let GPS0=null,PINGPS=null,PINMAP=null,PINLAYERS=null,PINSAT=false;
 function loadScriptT(src,ms){return new Promise((ok,no)=>{const sc=document.createElement('script');let d=0;const f=(fn,v)=>{if(d)return;d=1;fn(v)};sc.onload=()=>f(ok);sc.onerror=()=>f(no,new Error('x'));setTimeout(()=>f(no,new Error('timeout')),ms);sc.src=src;document.head.appendChild(sc)})}
 async function loadLeaflet(){
   if(window.L)return;
@@ -677,13 +678,15 @@ async function loadLeaflet(){
 async function openPin(){
   openPage('#pPin2');const msg=$('#pin2Msg');msg.textContent='Map khul raha hai…';
   try{await loadLeaflet()}catch(e){msg.textContent='Map load nahi hua. Internet check karein, ya Google Map app wala button use karein.';return}
-  msg.textContent='Map ko khiskakar pin ko apne ghar ke upar laayein (zoom karke satellite se ghar pehchanein).';
-  const c=GEO?[GEO.lat,GEO.lng]:[25.0,87.0];
+  msg.innerHTML='🔵 Neela point = GPS se mili location. 📍 Laal pin = jo aap chunenge. Map ko khiskakar laal pin ko apne ghar ke upar laayein.';
+  const g0=GPS0||GEO,c=g0?[g0.lat,g0.lng]:[25.0,87.0];
   if(!PINMAP){
-    PINMAP=L.map('pinMap',{zoomControl:true}).setView(c,18);
-    PINLAYERS={osm:L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}),sat:L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,attribution:'Tiles © Esri'})};
+    PINMAP=L.map('pinMap',{zoomControl:true,maxZoom:19}).setView(c,17);
+    PINLAYERS={osm:L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,maxNativeZoom:19,attribution:'© OpenStreetMap'}),sat:L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,maxNativeZoom:17,attribution:'Tiles © Esri'})};
     PINLAYERS.osm.addTo(PINMAP);
-  }else PINMAP.setView(c,18);
+  }else PINMAP.setView(c,17);
+  if(PINGPS){PINMAP.removeLayer(PINGPS);PINGPS=null}
+  if(g0){PINGPS=L.layerGroup([L.circle([g0.lat,g0.lng],{radius:Math.max(g0.acc||5,5),color:'#1a73e8',weight:1,fillColor:'#1a73e8',fillOpacity:.12}),L.circleMarker([g0.lat,g0.lng],{radius:8,color:'#fff',weight:3,fillColor:'#1a73e8',fillOpacity:1}).bindTooltip('GPS se mili location'+(g0.acc?' (±'+g0.acc+' m)':''),{permanent:true,direction:'top',offset:[0,-8]})]).addTo(PINMAP)}
   setTimeout(()=>PINMAP.invalidateSize(),150);
 }
 document.addEventListener('click',e=>{
