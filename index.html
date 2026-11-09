@@ -206,6 +206,7 @@ body:has(.page.show)::before{content:'';position:fixed;inset:0;background:rgba(0
 .top{padding-top:calc(14px + var(--sat)) !important}
 .ph{padding-top:calc(12px + var(--sat)) !important}
 body::after{content:'';position:fixed;top:0;left:0;right:0;height:var(--sat);background:var(--lav);z-index:25;pointer-events:none}
+.nearnote{margin:8px 0;padding:10px 12px;border-radius:12px;background:#e6f4ea;color:#137333;font-weight:700;font-size:14px}
 #pPin2.show{display:flex;flex-direction:column;height:100%;height:100dvh}
 </style>
 <style id="you-css">
@@ -291,6 +292,26 @@ body::after{content:'';position:fixed;top:0;left:0;right:0;height:var(--sat);bac
     <div style="position:absolute;right:10px;top:10px;z-index:1000;display:flex;flex-direction:column;gap:8px"><button type="button" id="pinSat" style="padding:8px 10px;border-radius:10px;border:1px solid #bbb;background:#fff;font-weight:700;font-size:13px">🛰️ Satellite</button><button type="button" id="pinMe" style="padding:8px 10px;border-radius:10px;border:1px solid #bbb;background:#fff;font-weight:700;font-size:13px">🎯 Meri location</button></div>
   </div>
   <div style="padding:10px 14px calc(22px + env(safe-area-inset-bottom,0px));flex:0 0 auto;background:#fff"><button type="button" class="btn" id="pin2Ok">✅ Yahi mera ghar hai</button></div>
+</div>
+
+<div class="page" id="pWalk">
+  <div class="ph"><button data-back="cart" aria-label="Back">←</button><h2>Saman list bhejein</h2></div>
+  <div class="form">
+    <div class="nearnote">📍 Aap dukaan ke paas hain. Saman list seedha dukandaar ke billing app par jayegi.</div>
+    <label for="wName">Aapka naam</label><input id="wName" autocomplete="name" maxlength="60">
+    <label for="wPhone">Mobile number (10 digit)</label><input id="wPhone" type="tel" inputmode="numeric" maxlength="10">
+    <div class="err" id="wErr"></div>
+    <button class="btn" id="wSend">🏪 Saman list bhejein</button>
+  </div>
+</div>
+<div class="page" id="pWalkSt">
+  <div class="ph"><h2>Dukandaar ka jawab</h2></div>
+  <div style="text-align:center;padding:40px 20px">
+    <div id="wsIc" style="font-size:64px">📨</div>
+    <h2 id="wsTt" style="margin:12px 0 6px"></h2><div id="wsSb" style="color:#666"></div>
+    <div id="wsId" style="margin-top:14px;font-weight:700"></div>
+    <button class="btn" id="wsDone" style="margin-top:26px">Theek hai</button>
+  </div>
 </div>
 
 <div class="page" id="pStore">
@@ -599,11 +620,11 @@ function renderCart(){
     const key=esc(l.c.id),vi=l.vi;
     return `<div class="line${l.ok?'':' bad'}"><div class="lp" style="background:${cat.bg}">${pic}</div><div class="li"><b>${esc(name)}</b><small>${esc(uLabel(l.u))}${l.ok?' · '+inr(l.p):''}</small>${l.ok?'':'<small style="color:#c0392b;display:block">Abhi available nahi</small>'}</div><div class="lr">${l.ok?`<div class="step"><button data-minus="${key}" data-vi="${vi}">−</button><span>${l.q}</span><button data-plus="${key}" data-vi="${vi}">+</button></div><div>${inr(l.p*l.q)}</div>`:`<button class="lnk" data-rm="${esc(ckey(l.c.id,l.u))}">Hatayein</button>`}</div></div>`;
   }).join('');
-  h+=`<div class="tot"><span>Total</span><span>${inr(tot)}</span></div><button class="btn" id="goCo"${tot>0?'':' disabled'}>Aage badhein</button>`;
+  h+=`<div class="tot"><span>Total</span><span>${inr(tot)}</span></div>${NEAR?`<div class="nearnote">📍 Aap dukaan ke paas hain (~${Math.round(NEAR.d)} m)</div><button class="btn" id="walkGo"${tot>0?'':' disabled'}>🏪 Saman list bhejein</button>`:`<button class="btn" id="goCo"${tot>0?'':' disabled'}>Aage badhein</button>`}`;
   B.innerHTML=h;
 }
 function openPage(id){document.querySelectorAll('.page').forEach(p=>p.classList.remove('show'));if(id)$(id).classList.add('show');document.body.style.overflow=id?'hidden':''}
-function openCart(){renderCart();openPage('#pCart')}
+function openCart(){renderCart();openPage('#pCart');checkNear()}
 function openCo(){
   const t=lines().filter(l=>l.ok).reduce((a,l)=>a+l.p*l.q,0);if(!t){toast('Cart mein saman chunein');return}
   const p=load('mittu_shop_profile',{});$('#fName').value=p.name||'';$('#fPhone').value=p.phone||'';$('#fAddr').value=p.addr||'';
@@ -696,6 +717,81 @@ document.addEventListener('click',e=>{
   if(t.id==='pinSat'&&PINMAP){PINSAT=!PINSAT;PINMAP.removeLayer(PINLAYERS[PINSAT?'osm':'sat']);PINLAYERS[PINSAT?'sat':'osm'].addTo(PINMAP);t.textContent=PINSAT?'🗺️ Normal map':'🛰️ Satellite';return}
   if(t.id==='pinMe'&&PINMAP){getGeo(10000).then(g=>{if(g)PINMAP.setView([g.lat,g.lng],18);else toast('Location nahi mili')});return}
   if(t.id==='pin2Ok'&&PINMAP){const p=PINMAP.getCenter();GEO={lat:+p.lat.toFixed(6),lng:+p.lng.toFixed(6),acc:0,pin:1};openPage('#pCo');geoStatus();toast('Pin save ho gaya');return}
+});
+
+/* ---------- WALK-IN: dukaan ke paas (100 m) to "Saman list bhejein" ---------- */
+let LOCMAIN=null,LOCR={},NEAR=null,WALK_ID=null,WALK_UN=null;
+function storeLoc(){const l=ST?LOCR[ST.rid]:LOCMAIN;return(l&&Number(l.lat)&&Number(l.lng))?{lat:Number(l.lat),lng:Number(l.lng)}:null}
+function distM(a,b){const R=6371000,r=x=>x*Math.PI/180,dl=r(b.lat-a.lat),dn=r(b.lng-a.lng),h=Math.sin(dl/2)**2+Math.cos(r(a.lat))*Math.cos(r(b.lat))*Math.sin(dn/2)**2;return 2*R*Math.asin(Math.sqrt(h))}
+function nearUI(){
+  const bp=$('#bPay');if(bp)bp.textContent=NEAR?'🏪 Saman list bhejein':'Payment karein';
+  if($('#pCart').classList.contains('show'))renderCart();
+}
+async function checkNear(){
+  const l=storeLoc();
+  if(!l){if(NEAR){NEAR=null;nearUI()}return}
+  const g=await getGeo(8000);
+  const was=!!NEAR;
+  if(g){const d=distM(g,l);NEAR=d<=100?{d,g}:null}
+  else NEAR=null;
+  if(was!==!!NEAR||NEAR)nearUI();
+}
+setInterval(()=>{if($('#pCart').classList.contains('show')||$('#pBill').classList.contains('show'))checkNear()},15000);
+function walkAsk(){
+  const p=load('mittu_shop_profile',{});
+  $('#wName').value=p.name||'';$('#wPhone').value=p.phone||'';$('#wErr').textContent='';
+  openPage('#pWalk');
+}
+function billWalk(){
+  const name=$('#bName').value.trim(),phone=$('#bPhone').value.replace(/\D/g,''),err=$('#bErr');
+  if(name.length<2){err.textContent='Naam likhein.';return}
+  if(!/^[6-9]\d{9}$/.test(phone)){err.textContent='Sahi 10 digit mobile number likhein.';return}
+  const rows=[];
+  for(let i=0;i<bill.length;i++){
+    const r=bill[i];if(!r.text.trim()&&!String(r.q).trim())continue;
+    const c=rowCalc(r);
+    if(!c.it){err.textContent='Saman '+(i+1)+': list se saman chunein.';return}
+    if(!(c.q>0)){err.textContent='Saman '+(i+1)+': sahi Qty likhein.';return}
+    rows.push({it:c.it,u:c.v.u,q:c.q});
+  }
+  if(!rows.length){err.textContent='Kam se kam ek saman jodein.';return}
+  rows.forEach(x=>{const k=ckey(x.it.id,x.u);const cur=cart[k]?cart[k].q:0;cart[k]={id:x.it.id,u:x.u,q:r2(cur+x.q),name:x.it.name,hindi:x.it.hindi}});
+  saveCart();bill=[newRow()];err.textContent='';bstat('');render();bars();
+  walkSubmit(name,phone);
+}
+async function walkSubmit(name,phone){
+  const err=$('#wErr');
+  const L=lines().filter(l=>l.ok);if(!L.length){toast('Cart khaali hai');return}
+  const total=Math.round(L.reduce((a,l)=>a+l.p*l.q,0)*100)/100;
+  const order={id:newId(),name,phone,address:'Dukaan par (walk-in)',note:'',pay:'COUNTER',walkin:true,items:L.map(l=>({id:l.it.id,name:l.it.name,hindi:l.it.hindi||'',unit:l.u,price:l.p,qty:l.q,total:Math.round(l.p*l.q*100)/100})),total,status:'new',ts:Date.now(),src:'shop'};
+  if(ST){order.store=ST.name;order.storeId=ST.rid}
+  if(NEAR&&NEAR.g){order.lat=NEAR.g.lat;order.lng=NEAR.g.lng}
+  try{
+    if(!FB)throw new Error('offline');
+    await Promise.race([FB.set(FB.push(FB.ref(FB.db,ST?'retailerOrders/'+ST.rid:'shopOrders')),order),new Promise((_,r)=>setTimeout(()=>r(new Error('timeout')),15000))]);
+  }catch(e){if(err)err.textContent='Saman list nahi ja payi. Internet check karke dobara koshish karein.';toast('Nahi ja payi');return}
+  save('mittu_shop_profile',Object.assign(load('mittu_shop_profile',{}),{name,phone}));
+  hist.push({id:order.id,ts:order.ts,total,items:order.items.map(i=>({id:i.id,name:i.name}))});hist=hist.slice(-30);save('mittu_shop_orders',hist);
+  cart={};saveCart();render();
+  WALK_ID=order.id;$('#wsId').textContent='Order no: '+order.id;walkStat({});
+  openPage('#pWalkSt');
+  if(WALK_UN){try{WALK_UN()}catch(e){}}
+  try{WALK_UN=FB.onValue(FB.ref(FB.db,'walkinStatus/'+order.id),s=>walkStat(s.val()||{}),()=>{})}catch(e){}
+}
+function walkStat(v){
+  const m={accepted:['✅','Dukandaar ne accept kar liya','Counter par jayein, aapka bill ban raha hai.'],waiting:['⏳','Dukandaar abhi dusra bill bana rahe hain','Thoda ruk jayein, aapki baari aane par bill banega.'],denied:['❌','Dukandaar ne list wapas kar di','Counter par jakar seedha baat karein.']};
+  const x=m[v.s]||['📨','Saman list bhej di gayi','Dukandaar ke jawab ka intezaar hai…'];
+  $('#wsIc').textContent=x[0];$('#wsTt').textContent=x[1];$('#wsSb').textContent=x[2];
+}
+document.addEventListener('click',e=>{
+  const t=e.target.closest&&e.target.closest('#wSend,#wsDone');if(!t)return;
+  if(t.id==='wSend'){
+    const name=$('#wName').value.trim(),phone=$('#wPhone').value.replace(/\D/g,''),err=$('#wErr');
+    if(name.length<2){err.textContent='Apna naam likhein.';return}
+    if(!/^[6-9]\d{9}$/.test(phone)){err.textContent='Sahi 10 digit mobile number likhein.';return}
+    t.disabled=true;walkSubmit(name,phone).finally(()=>{t.disabled=false});return;
+  }
+  if(t.id==='wsDone'){openPage(null)}
 });
 function newId(){return 'MS'+Date.now().toString(36).slice(-6).toUpperCase()+Math.random().toString(36).slice(2,4).toUpperCase()}
 async function placeOrder(){
@@ -803,6 +899,7 @@ document.addEventListener('click',e=>{
   if(t.id==='storeBack'&&SV){SV=null;renderStorePage();return}
   if(t.dataset.back!==undefined){if(t.dataset.back==='cart')openCart();else openPage(null);return}
   if(t.id==='goCo'){openCo();return}
+  if(t.id==='walkGo'){walkAsk();return}
   if(t.id==='placeBtn'){placeOrder();return}
   if(t.dataset.upiapp){payAppOpen(t.dataset.upiapp);return}
   if(t.id==='qrBtn'){showQR();return}
@@ -881,6 +978,7 @@ function enterStore(rid){
   cart=load('mittu_shop_cart_'+rid,{});
   S={view:'home',cat:'all',q:''};$('#q').value='';
   rebuildStore(null);
+  try{FB.onValue(FB.ref(FB.db,'retailers/'+rid+'/loc'),sn=>{LOCR[rid]=sn.val()||null},()=>{})}catch(e){}
   stUnsub=FB.onValue(FB.ref(FB.db,'retailers/'+rid+'/stock'),sn=>{if(!ST||ST.rid!==rid)return;rebuildStore(sn.val());render()},()=>toast('Is dukaan ka stock nahi aa paya'));
   openPage(null);render();window.scrollTo(0,0);
 }
@@ -959,7 +1057,7 @@ function openBill(){
   if(!$('#bName').value)$('#bName').value=p.name||'';
   if(!$('#bPhone').value)$('#bPhone').value=p.phone||'';
   if(!$('#bAddr').value)$('#bAddr').value=p.addr||'';
-  $('#bErr').textContent='';renderBill();openPage('#pBill');
+  $('#bErr').textContent='';renderBill();openPage('#pBill');checkNear();
 }
 function showSug(row,q){
   const box=row.querySelector('.sg');const list=suggest(q);
@@ -1203,7 +1301,7 @@ document.addEventListener('click',e=>{
   if(b.id==='mKey'){closeMenu();const k=prompt('Gemini API key paste karein (AI Studio > Copy key). Hatane ke liye khali chhodein.',AI_DIRECT_KEY||'');if(k!==null){AI_DIRECT_KEY=k.trim();try{localStorage.setItem('mittu_ai_key',AI_DIRECT_KEY);localStorage.removeItem('mittu_ai_model')}catch(e){}alert(AI_DIRECT_KEY?'AI key save ho gayi. Ab file upload karke dekhein.':'AI key hata di gayi.')}return}
   if(b.id==='mUp'){closeMenu();$('#fileIn').click();return}
   if(b.id==='bAdd'){bill.push(newRow());renderBill();const l=document.querySelectorAll('#bRows .bi');l[l.length-1].focus();return}
-  if(b.id==='bPay'){billGo();return}
+  if(b.id==='bPay'){if(NEAR){billWalk();return}billGo();return}
   if(b.dataset.bdel!==undefined){const i=+b.dataset.bdel;bill.splice(i,1);if(!bill.length)bill=[newRow()];renderBill();return}
   if(b.dataset.pick!==undefined){
     const row=b.closest('.brow'),i=+row.dataset.r;const it=byId.get(b.dataset.pick);if(!it)return;
@@ -1234,6 +1332,7 @@ async function initFB(){
     const D=await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js');
     const app=A.initializeApp({apiKey:"AIzaSyDQ-fm6-_bs728n6rcUS-XS9Zl-hqbIQhA",authDomain:"mittu-billing.firebaseapp.com",databaseURL:"https://mittu-billing-default-rtdb.firebaseio.com",projectId:"mittu-billing",storageBucket:"mittu-billing.firebasestorage.app",messagingSenderId:"9778174452",appId:"1:9778174452:web:99b40c599546a5560541a1"});
     const db=D.getDatabase(app);FB={db,ref:D.ref,set:D.set,push:D.push,onValue:D.onValue};
+    D.onValue(D.ref(db,'publicShop/loc'),s=>{LOCMAIN=s.val()||null},()=>{});
     D.onValue(D.ref(db,'retailerIndex'),s=>{RIDX=s.val()||{};if(!ST)renderTabs();if($('#pStore').classList.contains('show'))renderStorePage()},()=>{});
     D.onValue(D.ref(db,'.info/connected'),s=>setLiveUI(!!s.val()));
     D.onValue(D.ref(db,'publicShop/stock'),s=>{liveRaw=s.val();save('mittu_shop_live',liveRaw);if(!ST){rebuild();render()};if(!s.exists())$('#live span').textContent='Dukaan ne abhi daam nahi bheje'},e=>{setLiveUI(false);$('#live span').textContent='Daam nahi aa pa rahe ('+((e&&e.code)||'error')+')'});

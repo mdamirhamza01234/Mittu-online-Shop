@@ -64,6 +64,12 @@
     "retailerDisplay": {
       ".read": "auth != null",
       ".write": "auth != null"
+    },
+    "walkinStatus": {
+      "$id": {
+        ".read": true,
+        ".write": "auth != null"
+      }
     }
   }
 }
