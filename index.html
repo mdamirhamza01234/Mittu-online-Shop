@@ -277,8 +277,8 @@ body::after{content:'';position:fixed;top:0;left:0;right:0;height:var(--sat);bac
     <button type="button" class="btn" id="pinGmap">🗺️ Google Maps kholein</button>
     <button type="button" id="pinClip" style="margin-top:10px;width:100%;padding:12px;border-radius:12px;border:1.5px solid #0a5db0;background:#fff;color:#0a5db0;font-weight:700;font-size:15px">📋 Copy kiye coordinates lein</button>
     <div id="pinMsg" style="font-size:13px;margin:10px 0;color:#555"></div>
-    <label for="pinTxt" style="font-size:12.5px;font-weight:700">Ya coordinates yahan paste karein</label>
-    <input id="pinTxt" placeholder="25.388395,87.193987" style="width:100%;box-sizing:border-box;padding:12px;border:1.5px solid var(--line);border-radius:10px;font-size:15px;margin:4px 0 10px">
+    <label for="pinTxt" style="font-size:12.5px;font-weight:700">Ya coordinates / Google Map ka link yahan paste karein</label>
+    <input id="pinTxt" placeholder="25.388395,87.193987 ya Google Map ka link" style="width:100%;box-sizing:border-box;padding:12px;border:1.5px solid var(--line);border-radius:10px;font-size:15px;margin:4px 0 10px">
     <button type="button" class="btn" id="pinOk">✅ Yahi mera ghar hai</button>
   </div>
 </div>
@@ -650,11 +650,20 @@ function geoStatus(){
   else{st.style.color='#0a7a3d';st.textContent='✅ Location mil gayi (±'+GEO.acc+' m). Delivery wale ko aapke ghar tak seedha map milega.'}
 }
 /* ---------- Google Maps se pin: coordinates clipboard se apne-aap ---------- */
-function parseLL(t){
+function parseLL(t,strict){
   t=String(t||'');
   const pats=[/@(-?\d{1,2}\.\d{3,})\s*,\s*(-?\d{1,3}\.\d{3,})/,/!3d(-?\d{1,2}\.\d{3,})!4d(-?\d{1,3}\.\d{3,})/,/[?&](?:q|ll|query|destination)=(-?\d{1,2}\.\d{3,})(?:,|%2C)\s*(-?\d{1,3}\.\d{3,})/,/(-?\d{1,2}\.\d{3,})\s*[,;\s]\s*(-?\d{1,3}\.\d{3,})/];
-  for(const p of pats){const m=t.match(p);if(m){const la=+m[1],ln=+m[2];if(Math.abs(la)<=90&&Math.abs(ln)<=180)return{lat:+la.toFixed(6),lng:+ln.toFixed(6)}}}
+  for(const p of (strict?pats.slice(0,3):pats)){const m=t.match(p);if(m){const la=+m[1],ln=+m[2];if(Math.abs(la)<=90&&Math.abs(ln)<=180)return{lat:+la.toFixed(6),lng:+ln.toFixed(6)}}}
   return null;
+}
+async function resolveLL(t){
+  let ll=parseLL(t);if(ll)return ll;
+  const m=String(t||'').match(/https?:\/\/[^\s]*(?:goo\.gl|g\.co|share\.google|google\.[a-z.]+\/maps|maps\.google)[^\s]*/i);if(!m)return null;
+  try{
+    const ctl=new AbortController();const tm=setTimeout(()=>ctl.abort(),9000);
+    const r=await fetch('https://api.allorigins.win/get?url='+encodeURIComponent(m[0]),{signal:ctl.signal});clearTimeout(tm);
+    const j=await r.json();return parseLL((j.status&&j.status.url)||'',true)||parseLL(j.contents||'',true);
+  }catch(e){return null}
 }
 function pinApply(ll,fromClip){
   GEO={lat:ll.lat,lng:ll.lng,acc:0,pin:1};
@@ -663,7 +672,7 @@ function pinApply(ll,fromClip){
 async function pinReadClip(manual){
   const msg=$('#pinMsg');
   try{
-    const t=await navigator.clipboard.readText();const ll=parseLL(t);
+    const t=await navigator.clipboard.readText();const ll=await resolveLL(t);
     if(ll){pinApply(ll,true);return true}
     msg.style.color='#b3261e';msg.textContent='Clipboard mein coordinates nahi mile. Google Map mein pin lagakar upar dikhne wale coordinates (jaise 25.388395,87.193987) copy karein.';
   }catch(e){
@@ -681,9 +690,10 @@ document.addEventListener('click',e=>{
     const c=GEO?GEO.lat+','+GEO.lng:'25.0,87.0';window.__pinWait=true;
     window.open('https://www.google.com/maps/search/?api=1&query='+c,'_blank');return}
   if(t.id==='pinClip'){pinReadClip(true);return}
-  if(t.id==='pinOk'){const ll=parseLL($('#pinTxt').value);const m=$('#pinMsg');
-    if(!ll){m.style.color='#b3261e';m.textContent='Coordinates sahi nahi hain. Jaise: 25.388395,87.193987';return}
-    pinApply(ll);return}
+  if(t.id==='pinOk'){const m=$('#pinMsg');m.style.color='#555';m.textContent='Link / coordinates check ho rahe hain…';
+    resolveLL($('#pinTxt').value).then(ll=>{
+      if(!ll){m.style.color='#b3261e';m.textContent='Coordinates ya Google Map link se location nahi mili. Google Maps mein pin par tap karke upar dikhne wale coordinates copy karein.';return}
+      pinApply(ll)});return}
 });
 /* ---------- Map pin picker (Leaflet + OpenStreetMap) ---------- */
 let GPS0=null,PINGPS=null,PINMAP=null,PINLAYERS=null,PINSAT=false;
@@ -1432,6 +1442,23 @@ window.__bgHome=function(){
   });
   if(!tryNative()){ var n = 0, iv = setInterval(function(){ if(tryNative() || ++n > 10) clearInterval(iv); }, 500); }
 })();
+
+/* Bahari links (Google Maps, WhatsApp, tel) APK ke WebView mein kaam karein */
+(function(){
+  if(window.__extLinks) return; window.__extLinks = 1;
+  document.addEventListener('click', function(e){
+    var a = e.target && e.target.closest ? e.target.closest('a[href]') : null; if(!a) return;
+    var h = a.getAttribute('href') || '';
+    if(!/^https?:/i.test(h)) return;
+    var u; try{ u = new URL(h, location.href); }catch(x){ return; }
+    if(a.target === '_blank' || u.origin !== location.origin){
+      e.preventDefault();
+      var w = null; try{ w = window.open(h, '_blank'); }catch(x){}
+      if(!w){ try{ location.href = h; }catch(x){} }
+    }
+  }, true);
+})();
+
 </script>
 </body>
 </html>
