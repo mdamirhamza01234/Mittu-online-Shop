@@ -309,6 +309,7 @@ body::after{content:'';position:fixed;top:0;left:0;right:0;height:var(--sat);bac
   <div style="text-align:center;padding:40px 20px">
     <div id="wsIc" style="font-size:64px">📨</div>
     <h2 id="wsTt" style="margin:12px 0 6px"></h2><div id="wsSb" style="color:#666"></div>
+    <div id="wsCd" style="margin-top:12px;font-weight:800;color:#b26a00"></div>
     <div id="wsId" style="margin-top:14px;font-weight:700"></div>
     <button class="btn" id="wsDone" style="margin-top:26px">Theek hai</button>
   </div>
@@ -788,10 +789,30 @@ async function walkSubmit(name,phone){
   if(WALK_UN){try{WALK_UN()}catch(e){}}
   try{WALK_UN=FB.onValue(FB.ref(FB.db,'walkinStatus/'+order.id),s=>walkStat(s.val()||{}),()=>{})}catch(e){}
 }
+let WALK_V={},WALK_TM=null,WALK_FINAL=false;
 function walkStat(v){
-  const m={accepted:['✅','Dukandaar ne accept kar liya','Counter par jayein, aapka bill ban raha hai.'],waiting:['⏳','Dukandaar abhi dusra bill bana rahe hain','Thoda ruk jayein, aapki baari aane par bill banega.'],denied:['❌','Dukandaar ne list wapas kar di','Counter par jakar seedha baat karein.']};
-  const x=m[v.s]||['📨','Saman list bhej di gayi','Dukandaar ke jawab ka intezaar hai…'];
+  if(v)WALK_V=v;v=WALK_V||{};
+  let s=v.s||'sent';
+  if(s==='waiting'&&v.until&&v.until<=Date.now())s='denied';   // time khatam
+  const m={
+    sent:['📨','Saman list bhej di gayi','Dukandaar ke jawab ka intezaar hai…','#1a56c4'],
+    accepted:['✅','Accept ho gaya','Dukandaar ne aapki list accept kar li. Counter par jayein, bill ban raha hai.','#137333'],
+    waiting:['⏳','Waiting mein hai','Dukandaar abhi dusra bill bana rahe hain. Thoda ruk jayein.','#b26a00'],
+    denied:['❌','Deny ho gaya',(v.reason==='timeout'||(v.s==='waiting'&&v.until&&v.until<=Date.now()))?'5 minute mein jawab nahi aaya, isliye request apne-aap cancel ho gayi. Counter par jakar seedha baat karein.':'Dukandaar ne list wapas kar di. Counter par jakar seedha baat karein.','#c62828']
+  };
+  const x=m[s]||m.sent;
   $('#wsIc').textContent=x[0];$('#wsTt').textContent=x[1];$('#wsSb').textContent=x[2];
+  let cd='';if(s==='waiting'&&v.until){const r=Math.max(0,Math.ceil((v.until-Date.now())/1000));cd='⏱ '+Math.floor(r/60)+':'+String(r%60).padStart(2,'0')+' mein jawab na aaya to request apne-aap cancel ho jayegi';}
+  const c=$('#wsCd');if(c)c.textContent=cd;
+  WALK_FINAL=(s==='accepted'||s==='denied');
+  // chhota floating chip (screen band hone par bhi dikhe)
+  let chip=document.getElementById('walkChip');
+  if(!WALK_ID){if(chip)chip.remove();return}
+  if(!chip){chip=document.createElement('button');chip.id='walkChip';chip.type='button';chip.style.cssText='position:fixed;left:12px;bottom:150px;z-index:90;border:0;border-radius:22px;color:#fff;font:800 13px sans-serif;padding:10px 14px;box-shadow:0 4px 14px rgba(0,0,0,.35)';chip.onclick=()=>{openPage('#pWalkSt')};document.body.appendChild(chip)}
+  chip.style.background=x[3];
+  chip.textContent=x[0]+' '+x[1]+(s==='waiting'&&v.until?' · '+Math.floor(Math.max(0,v.until-Date.now())/60000)+':'+String(Math.max(0,Math.ceil((v.until-Date.now())/1000))%60).padStart(2,'0'):'');
+  if(WALK_TM)clearInterval(WALK_TM);
+  if(s==='waiting')WALK_TM=setInterval(()=>walkStat(null),1000);
 }
 document.addEventListener('click',e=>{
   const t=e.target.closest&&e.target.closest('#wSend,#wsDone');if(!t)return;
@@ -801,7 +822,7 @@ document.addEventListener('click',e=>{
     if(!/^[6-9]\d{9}$/.test(phone)){err.textContent='Sahi 10 digit mobile number likhein.';return}
     t.disabled=true;walkSubmit(name,phone).finally(()=>{t.disabled=false});return;
   }
-  if(t.id==='wsDone'){openPage(null)}
+  if(t.id==='wsDone'){openPage(null);if(WALK_FINAL){const c=document.getElementById('walkChip');if(c)c.remove();WALK_ID=null}}
 });
 function newId(){return 'MS'+Date.now().toString(36).slice(-6).toUpperCase()+Math.random().toString(36).slice(2,4).toUpperCase()}
 async function placeOrder(){
