@@ -1388,22 +1388,49 @@ window.__bgHome=function(){
     if(typeof window.__bgHome === 'function'){ try{ if(window.__bgHome()) return true; }catch(e){} }
     return false;
   }
-  function arm(){ try{ history.pushState({bg: 1}, ''); }catch(e){} }
+  var exitArmed = false;
+  function exitToast(){
+    if(!document.body) return;
+    toast('App band karne ke liye dobara back dabayein');
+  }
   function toast(t){
     var d = document.createElement('div');
     d.textContent = t;
     d.style.cssText = 'position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:rgba(0,0,0,.82);color:#fff;padding:10px 16px;border-radius:20px;font:600 13px sans-serif;z-index:2147483647;pointer-events:none';
     document.body.appendChild(d); setTimeout(function(){ d.remove(); }, 1800);
   }
-  try{ history.replaceState({bg: 0}, ''); }catch(e){}
-  arm();
+  /* 1) Native (Capacitor App plugin) - sabse pakka tareeka */
+  var nativeOn = false;
+  function tryNative(){
+    if(nativeOn) return true;
+    var A = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App;
+    if(!A || typeof A.addListener !== 'function') return false;
+    nativeOn = true;
+    A.addListener('backButton', function(){
+      if(closeTop()) return;
+      if(exitArmed){ try{ A.exitApp(); }catch(e){} return; }
+      exitArmed = true; exitToast(); setTimeout(function(){ exitArmed = false; }, 1800);
+    });
+    return true;
+  }
+  /* 2) Fallback: browser history (user touch ke baad hi push - warna Android WebView use skip kar deta hai) */
+  var armedOnce = false;
+  function arm(){ try{ history.pushState({bg: 1}, ''); }catch(e){} }
+  function firstTouch(){
+    if(armedOnce || nativeOn) return; armedOnce = true;
+    try{ history.replaceState({bg: 0}, ''); }catch(e){}
+    arm();
+  }
+  ['touchstart', 'pointerdown', 'click', 'keydown'].forEach(function(ev){ window.addEventListener(ev, firstTouch, {capture: true, once: true, passive: true}); });
   window.addEventListener('popstate', function(){
+    if(nativeOn) return;
     if(closeTop()){ arm(); return; }
-    if(!window.__bgExit){
-      window.__bgExit = 1; toast('App band karne ke liye dobara back dabayein');
-      setTimeout(function(){ window.__bgExit = 0; arm(); }, 1800);   // 1.8s baad dobara guard lagao
+    if(!exitArmed){
+      exitArmed = true; exitToast();
+      setTimeout(function(){ exitArmed = false; arm(); }, 1800);
     }
   });
+  if(!tryNative()){ var n = 0, iv = setInterval(function(){ if(tryNative() || ++n > 10) clearInterval(iv); }, 500); }
 })();
 </script>
 </body>
