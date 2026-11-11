@@ -474,7 +474,7 @@ function cardHTML(it){
   const cat=CATMAP[it.cat]||CATS[CATS.length-1];
   const vi=Math.min(sel[it.id]||0,Math.max(it.v.length-1,0));const v=it.v[vi];
   const em=emojiFor(it.name,cat);
-  const pic=it.store?(it.img?`<img loading="lazy" src="${esc(it.img)}" alt="" onerror="this.outerHTML='<div class=csoon>Coming soon</div>'">`:'<div class="csoon">Coming soon</div>'):(it.img?`<img loading="lazy" src="${esc(it.img)}" alt="" onerror="this.replaceWith(document.createTextNode('${em}'))">`:em);
+  const pic=it.store?(it.img?`<img loading="lazy" src="${esc(it.img)}" alt="" onerror="this.replaceWith(document.createTextNode('${em}'))">`:em):(it.img?`<img loading="lazy" src="${esc(it.img)}" alt="" onerror="this.replaceWith(document.createTextNode('${em}'))">`:em);
   let chip;
   if(!it.live)chip=`<span class="chip" style="max-width:58%">${esc(basisLabel(it.basis))}</span>`;
   else if(it.v.length>1)chip=`<select class="chip" data-vsel="${esc(it.id)}" aria-label="Unit">${it.v.map((x,i)=>`<option value="${i}"${i===vi?' selected':''}>${esc(uLabel(x.u))}</option>`).join('')}</select>`;
