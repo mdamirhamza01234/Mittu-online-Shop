@@ -24,6 +24,7 @@ button{font:inherit;cursor:pointer;border:0;background:none;color:inherit}
 .badge.show{display:flex}
 .sticky{position:sticky;top:0;z-index:20;background:var(--lav2)}
 .search{padding:10px 16px 8px;position:relative}
+#gsBox .gsh{margin:16px 4px 6px;font-weight:800;font-size:15px;color:#3a2a5c}
 #recentBox{display:none;position:absolute;left:16px;right:16px;top:62px;z-index:60;background:#fff;border-radius:16px;box-shadow:0 8px 24px rgba(0,0,0,.2);padding:6px 4px;max-height:50vh;overflow:auto}
 #recentBox .rh{display:flex;justify-content:space-between;align-items:center;padding:6px 12px;color:#555;font-size:13px}#recentBox .rh button{border:0;background:none;color:#6b3fc4;font-weight:800;font-size:13px}
 #recentBox .rr{display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:10px;font-size:15.5px}#recentBox .rr:active{background:#f3eefc}#recentBox .rr em{flex:1;font-style:normal;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}#recentBox .rr button{border:0;background:none;color:#888;font-size:16px;padding:4px 8px}
@@ -603,14 +604,14 @@ function gsHTML(ws){
   let h='',busy=false,any=false;
   if(ST){ // dukaan ke andar ho to Mittu Wholesaler ka maal bhi
     const l=gsParse(liveRaw).filter(hit).slice(0,8);
-    if(l.length){any=true;h+=`<div class="sg">🛒 Mittu Wholesaler & Retailer</div>`+l.map(it=>gsRow(it,'__main','Mittu Wholesaler','Grocery Store')).join('')}
+    if(l.length){any=true;h+=`<div class="gsh">🛒 Mittu Wholesaler & Retailer</div>`+l.map(it=>gsRow(it,'__main','Mittu Wholesaler','Grocery Store')).join('')}
   }
   Object.keys(RIDX).forEach(rid=>{
     if(ST&&ST.rid===rid)return;
     const r=RIDX[rid];if(!r||!r.name)return;
     const c=GS[rid];if(!c){busy=true;return}if(c.busy)busy=true;
     const l=c.list.filter(hit).slice(0,8);
-    if(l.length){any=true;h+=`<div class="sg">${STORE_EM[r.type]||'🏬'} ${esc(r.name)} · ${esc(r.type)}</div>`+l.map(it=>gsRow(it,rid,r.name,r.type)).join('')}
+    if(l.length){any=true;h+=`<div class="gsh">${STORE_EM[r.type]||'🏬'} ${esc(r.name)} · ${esc(r.type)}</div>`+l.map(it=>gsRow(it,rid,r.name,r.type)).join('')}
   });
   gsLoad();
   if(busy&&!any)h+='<div class="note" style="margin:10px 16px">⏳ Dusri dukaano mein bhi dhundh rahe hain…</div>';
