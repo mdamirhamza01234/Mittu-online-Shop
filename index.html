@@ -47,6 +47,7 @@ button{font:inherit;cursor:pointer;border:0;background:none;color:inherit}
 .card.off .pic{opacity:.55}
 .pic{position:relative;aspect-ratio:1/1;border-radius:12px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:clamp(40px,12vw,64px);overflow:hidden;padding-bottom:26px;text-align:center}
 .pic img{width:100%;height:100%;object-fit:contain;padding:6px;mix-blend-mode:multiply}
+.pic.up{padding-bottom:0}.pic.up img{position:absolute;inset:0;padding:0;object-fit:cover;mix-blend-mode:normal}.pic.up .strip{z-index:1}
 .strip{position:absolute;left:0;right:0;bottom:0;height:30px;background:#efeff2;display:flex;align-items:center;padding:0 6px}
 .chip{font-size:11px;color:#444;background:transparent;border:0;max-width:52%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:inherit;padding:0}
 select.chip{appearance:none;-webkit-appearance:none;outline:0;font-weight:700;color:#222;background:#fff;border-radius:8px;padding:2px 4px;max-width:56%}
@@ -444,7 +445,7 @@ function rebuild(){
     const v=vv.map(x=>({p:Number(x&&x.p)||0,u:String((x&&x.u)||'')})).filter(x=>x.p>0);
     if(!v.length)return;
     const m=bestMatch(String(o.n));
-    live.push({id,name:String(o.n),hindi:o.h?String(o.h):'',v,s:!(o.s===0||o.s===false),img:(typeof o.i==='string'&&/^https:\/\//.test(o.i))?o.i:'',live:true,m:(m&&m.sc>=0.42)?m:null,fb:m});
+    live.push({id,name:String(o.n),hindi:o.h?String(o.h):'',v,s:!(o.s===0||o.s===false),img:(typeof o.i==='string'&&/^https:\/\//.test(o.i))?o.i:'',up:(typeof o.i==='string'&&/^https:\/\//.test(o.i)),vl:o.vl?String(o.vl):'',live:true,m:(m&&m.sc>=0.42)?m:null,fb:m});
   });
   /* ek catalogue item ko sabse achha stock item milta hai; baaki stock items apni category mein alag dikhte hain */
   const take=new Map();
@@ -453,7 +454,7 @@ function rebuild(){
   live.forEach(it=>{
     const won=it.m&&take.get(it.m.c.n)===it;
     const ref=it.m?it.m.c:(it.fb?it.fb.c:null);
-    it.cat=ref?ref.cat:'c52';it.ord=ref?ref.n+(won?0:0.5):2000;it.basis='';if(it.m){const si=imgFor(it.m.c.n);if(si)it.img=si}items.push(it);
+    it.cat=ref?ref.cat:'c52';it.ord=ref?ref.n+(won?0:0.5):2000;it.basis='';if(it.m&&!it.up){const si=imgFor(it.m.c.n);if(si)it.img=si}items.push(it);
   });
   CATALOG.forEach(c=>{if(!take.has(c.n))items.push({id:'c'+c.n,name:c.name,hindi:'',v:[],s:true,img:imgFor(c.n),cat:c.cat,ord:c.n,live:false,basis:c.basis})});
   items.sort((a,b)=>(b.live-a.live)||(a.ord-b.ord)||a.name.localeCompare(b.name));
@@ -480,7 +481,7 @@ function cardHTML(it){
   else if(it.v.length>1)chip=`<select class="chip" data-vsel="${esc(it.id)}" aria-label="Unit">${it.v.map((x,i)=>`<option value="${i}"${i===vi?' selected':''}>${esc(uLabel(x.u))}</option>`).join('')}</select>`;
   else chip=`<span class="chip">${esc(uLabel(v.u))}</span>`;
   const price=v?`<div class="price">${inr(v.p)}</div>`:'<div class="price" style="visibility:hidden">₹0</div>';
-  return `<div class="card${it.s?'':' off'}${it.live?'':' soonc'}" data-card="${esc(it.id)}"><div class="pw"><div class="pic${it.store?' sp':''}" style="background:${cat.bg}">${pic}<div class="strip">${chip}</div></div><div class="act">${actHTML(it)}</div></div>${price}<div class="nm">${esc(it.name)}${it.vl?` <span style="color:#6b3fc4;font-weight:800">(${esc(it.vl)})</span>`:''}</div>${it.hindi?`<div class="hi">${esc(it.hindi)}</div>`:''}</div>`;
+  return `<div class="card${it.s?'':' off'}${it.live?'':' soonc'}" data-card="${esc(it.id)}"><div class="pw"><div class="pic${it.store?' sp':''}${it.up&&it.img?' up':''}" style="background:${cat.bg}">${pic}<div class="strip">${chip}</div></div><div class="act">${actHTML(it)}</div></div>${price}<div class="nm">${esc(it.name)}${it.vl?` <span style="color:#6b3fc4;font-weight:800">(${esc(it.vl)})</span>`:''}</div>${it.hindi?`<div class="hi">${esc(it.hindi)}</div>`:''}</div>`;
 }
 function repaint(id){
   const it=byId.get(id);if(!it)return;
@@ -995,7 +996,7 @@ function rebuildStore(raw){
     const cn=String(o.c||'Anya Saman').trim()||'Anya Saman';
     const cid='k'+cn.toLowerCase().replace(/[^a-z0-9ऀ-ॿ]+/g,'_');
     if(!cats.has(cid))cats.set(cid,{id:cid,n:cn,e:(ST&&STORE_EM[ST.type])||'🏷️',bg:'#fff'});
-    list.push({id,name:String(o.n),hindi:o.h?String(o.h):'',v,s:!(o.s===0||o.s===false),img:(typeof o.i==='string'&&/^https:\/\//.test(o.i))?o.i:'',vl:o.vl?String(o.vl):'',live:true,cat:cid,ord:0,basis:'',store:true});
+    list.push({id,name:String(o.n),hindi:o.h?String(o.h):'',v,s:!(o.s===0||o.s===false),img:(typeof o.i==='string'&&/^https:\/\//.test(o.i))?o.i:'',vl:o.vl?String(o.vl):'',up:(typeof o.i==='string'&&/^https:\/\//.test(o.i)),live:true,cat:cid,ord:0,basis:'',store:true});
   });
   setCats([...cats.values()].sort((a,b)=>a.n.localeCompare(b.n)));
   items=list.sort((a,b)=>a.name.localeCompare(b.name));byId=new Map(items.map(i=>[i.id,i]));isLive=true;
