@@ -430,6 +430,8 @@ let toastT;function toast(m){const t=$('#toast');t.textContent=m;t.classList.add
 /* ---------- state ---------- */
 let items=[],byId=new Map(),isLive=false;
 let liveRaw=load('mittu_shop_live',null);
+let IPH=load('mittu_item_photos',{})||{},stockRaw=liveRaw;
+function mergeIP(r){if(!r||typeof r!=='object')return r;const o={};Object.keys(r).forEach(k=>{const x=r[k],p=IPH[k]&&IPH[k].u;o[k]=(x&&typeof x==='object'&&typeof p==='string'&&/^https:\/\/res\.cloudinary\.com\//.test(p))?Object.assign({},x,{i:p}):x});return o}
 let cart=load('mittu_shop_cart',{});
 function saveCart(){save(ST?'mittu_shop_cart_'+ST.rid:'mittu_shop_cart',cart)}
 let hist=load('mittu_shop_orders',[]);
@@ -1463,7 +1465,8 @@ async function initFB(){
     D.onValue(D.ref(db,'publicShop/loc'),s=>{LOCMAIN=s.val()||null},()=>{});
     D.onValue(D.ref(db,'retailerIndex'),s=>{RIDX=s.val()||{};if(!ST)renderTabs();if($('#pStore').classList.contains('show'))renderStorePage()},()=>{});
     D.onValue(D.ref(db,'.info/connected'),s=>setLiveUI(!!s.val()));
-    D.onValue(D.ref(db,'publicShop/stock'),s=>{liveRaw=s.val();save('mittu_shop_live',liveRaw);if(!ST){rebuild();render()};if(!s.exists())$('#live span').textContent='Dukaan ne abhi daam nahi bheje'},e=>{setLiveUI(false);$('#live span').textContent='Daam nahi aa pa rahe ('+((e&&e.code)||'error')+')'});
+    D.onValue(D.ref(db,'itemPhotos'),s=>{IPH=s.val()||{};save('mittu_item_photos',IPH);liveRaw=mergeIP(stockRaw);if(!ST){rebuild();render()}},()=>{});
+    D.onValue(D.ref(db,'publicShop/stock'),s=>{stockRaw=s.val();liveRaw=mergeIP(stockRaw);save('mittu_shop_live',liveRaw);if(!ST){rebuild();render()};if(!s.exists())$('#live span').textContent='Dukaan ne abhi daam nahi bheje'},e=>{setLiveUI(false);$('#live span').textContent='Daam nahi aa pa rahe ('+((e&&e.code)||'error')+')'});
   }catch(e){setLiveUI(false)}
 }
 rebuild();render();setLiveUI(false);initFB();

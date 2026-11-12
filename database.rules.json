@@ -82,6 +82,13 @@
         ".read": "auth != null && auth.uid === $uid",
         ".write": "auth != null && auth.uid === $uid"
       }
+    },
+    "itemPhotos": {
+      ".read": true,
+      "$id": {
+        ".write": "auth != null",
+        ".validate": "newData.hasChildren(['u']) && newData.child('u').isString() && newData.child('u').val().matches(/^https:\\/\\/res\\.cloudinary\\.com\\/.*/) && newData.child('u').val().length < 400"
+      }
     }
   }
 }
