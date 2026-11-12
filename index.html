@@ -23,7 +23,10 @@ button{font:inherit;cursor:pointer;border:0;background:none;color:inherit}
 .badge{position:absolute;top:-4px;right:-4px;min-width:20px;height:20px;border-radius:10px;background:var(--red);color:#fff;font-size:11px;font-weight:700;display:none;align-items:center;justify-content:center;padding:0 5px}
 .badge.show{display:flex}
 .sticky{position:sticky;top:0;z-index:20;background:var(--lav2)}
-.search{padding:10px 16px 8px}
+.search{padding:10px 16px 8px;position:relative}
+#recentBox{display:none;position:absolute;left:16px;right:16px;top:62px;z-index:60;background:#fff;border-radius:16px;box-shadow:0 8px 24px rgba(0,0,0,.2);padding:6px 4px;max-height:50vh;overflow:auto}
+#recentBox .rh{display:flex;justify-content:space-between;align-items:center;padding:6px 12px;color:#555;font-size:13px}#recentBox .rh button{border:0;background:none;color:#6b3fc4;font-weight:800;font-size:13px}
+#recentBox .rr{display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:10px;font-size:15.5px}#recentBox .rr:active{background:#f3eefc}#recentBox .rr em{flex:1;font-style:normal;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}#recentBox .rr button{border:0;background:none;color:#888;font-size:16px;padding:4px 8px}
 .search label{display:flex;align-items:center;gap:10px;background:#fff;border-radius:26px;height:48px;padding:0 16px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
 .search input{flex:1;border:0;outline:0;font:inherit;font-size:16px;background:transparent;min-width:0}
 .tabs{display:flex;overflow-x:auto;gap:4px;padding:2px 8px 0;scrollbar-width:none;background:var(--lav2)}
@@ -245,7 +248,7 @@ body::after{content:'';position:fixed;top:0;left:0;right:0;height:var(--sat);bac
     <button class="cartbtn" data-go="cart" aria-label="Cart">🛒<span class="badge" id="b1">0</span></button>
   </div>
   <div class="sticky">
-    <div class="search"><label><span>🔍</span><input id="q" type="search" placeholder="Search karein: atta, tel, sabun…" autocomplete="off"></label><button class="plusbtn" id="plusBtn" aria-label="Bill / Upload">+</button><div class="pmenu" id="pmenu">
+    <div class="search"><label><span>🔍</span><input id="q" type="search" placeholder="Search karein: atta, tel, sabun…" autocomplete="off"></label><button class="plusbtn" id="plusBtn" aria-label="Bill / Upload">+</button><div id="recentBox" onpointerdown="event.preventDefault()"></div><div class="pmenu" id="pmenu">
   <button id="mBill"><span>🧾</span><div>Bill banayen<small>Saman chun kar bill / order banayen</small></div></button>
   <button id="mKey"><span>🔑</span><div>AI key daalein<small>Sirf is phone mein save hogi</small></div></button>
   <button id="mUp"><span>📤</span><div>File upload karein<small>Photo ya PDF se bill bhar jayega</small></div></button>
@@ -562,6 +565,77 @@ document.addEventListener('click',e=>{
   }
 });
 function sec(c,list,all){return `<section class="sec"><div class="sh"><h2>${c.e} ${esc(c.n)}</h2>${all?`<button class="lnk" data-cat="${c.id}">Sab dekhein ›</button>`:''}</div><div class="grid">${list.map(cardHTML).join('')}</div></section>`}
+/* ---------- sab dukaano mein search + recent searches ---------- */
+let GS={};
+function gsParse(raw){
+  const out=[];
+  if(raw&&typeof raw==='object')Object.entries(raw).forEach(([id,o])=>{
+    if(!o||!o.n)return;
+    const vv=Array.isArray(o.v)?o.v:Object.values(o.v||{});
+    const v=vv.map(x=>({p:Number(x&&x.p)||0,u:String((x&&x.u)||'')})).filter(x=>x.p>0);
+    if(!v.length)return;
+    out.push({id,name:String(o.n),hindi:o.h?String(o.h):'',v,vl:o.vl?String(o.vl):'',img:(typeof o.i==='string'&&/^https:\/\//.test(o.i))?o.i:''});
+  });
+  return out;
+}
+function gsLoad(){
+  if(!FB)return;
+  const now=Date.now();
+  Object.keys(RIDX).forEach(rid=>{
+    if(ST&&ST.rid===rid)return;
+    const c=GS[rid];if(c&&(c.busy||now-c.ts<180000))return;
+    GS[rid]={ts:c?c.ts:0,list:c?c.list:[],busy:1};
+    let un=null,done=false;
+    try{un=FB.onValue(FB.ref(FB.db,'retailers/'+rid+'/stock'),sn=>{
+      GS[rid]={ts:Date.now(),list:gsParse(sn.val()),busy:0};
+      if(!done){done=true;setTimeout(()=>{try{un&&un()}catch(e){}},0)}
+      if(S.q.trim())render();
+    },()=>{GS[rid]={ts:Date.now(),list:[],busy:0}})}catch(e){GS[rid]={ts:Date.now(),list:[],busy:0}}
+  });
+}
+function gsRow(it,rid,label,type){
+  const v=it.v[0],em=STORE_EM[type]||'🏬';
+  const pic=it.img?`<img src="${esc(it.img)}" alt="" style="width:46px;height:46px;border-radius:10px;object-fit:cover" onerror="this.replaceWith(document.createTextNode('${em}'))">`:em;
+  return `<button class="srow" data-gsrid="${esc(rid)}"><span class="se">${pic}</span><div><b>${esc(it.name)}${it.vl?` (${esc(it.vl)})`:''}</b><small>${inr(v.p)}${v.u?' / '+esc(v.u):''} · ${esc(label)}</small></div><span class="sn">Kholein ›</span></button>`;
+}
+function gsHTML(ws){
+  const hit=it=>{const t=(it.name+' '+it.hindi).toLowerCase();return ws.every(w=>t.includes(w))};
+  let h='',busy=false,any=false;
+  if(ST){ // dukaan ke andar ho to Mittu Wholesaler ka maal bhi
+    const l=gsParse(liveRaw).filter(hit).slice(0,8);
+    if(l.length){any=true;h+=`<div class="sg">🛒 Mittu Wholesaler & Retailer</div>`+l.map(it=>gsRow(it,'__main','Mittu Wholesaler','Grocery Store')).join('')}
+  }
+  Object.keys(RIDX).forEach(rid=>{
+    if(ST&&ST.rid===rid)return;
+    const r=RIDX[rid];if(!r||!r.name)return;
+    const c=GS[rid];if(!c){busy=true;return}if(c.busy)busy=true;
+    const l=c.list.filter(hit).slice(0,8);
+    if(l.length){any=true;h+=`<div class="sg">${STORE_EM[r.type]||'🏬'} ${esc(r.name)} · ${esc(r.type)}</div>`+l.map(it=>gsRow(it,rid,r.name,r.type)).join('')}
+  });
+  gsLoad();
+  if(busy&&!any)h+='<div class="note" style="margin:10px 16px">⏳ Dusri dukaano mein bhi dhundh rahe hain…</div>';
+  return h?`<section class="sec" id="gsBox">${h}</section>`:'';
+}
+let RS=load('mittu_recent_q',[]),rsT=null;
+function rsAdd(q){q=String(q||'').trim();if(q.length<2)return;RS=[q].concat(RS.filter(x=>x.toLowerCase()!==q.toLowerCase())).slice(0,8);save('mittu_recent_q',RS)}
+function rsShow(){
+  const b=$('#recentBox');if(!b)return;
+  if(!RS.length||$('#q').value.trim()||document.activeElement!==$('#q')){b.style.display='none';return}
+  b.innerHTML='<div class="rh"><b>🕘 Recent search</b><button type="button" data-rsclear="1">Sab hatayein</button></div>'+RS.map((x,i)=>`<div class="rr" data-rs="${i}"><span>🕘</span><em>${esc(x)}</em><button type="button" data-rsdel="${i}" aria-label="Hatayein">✕</button></div>`).join('');
+  b.style.display='block';
+}
+document.addEventListener('click',e=>{
+  const g=e.target.closest&&e.target.closest('[data-gsrid]');
+  if(g){
+    const rid=g.dataset.gsrid,q=$('#q').value;rsAdd(q);
+    if(rid==='__main'){leaveStore();}else{enterStore(rid)}
+    S.q=q;$('#q').value=q;render();window.scrollTo(0,0);return;
+  }
+  const c=e.target.closest&&e.target.closest('[data-rsclear],[data-rsdel],[data-rs]');if(!c)return;
+  if(c.dataset.rsclear){RS=[];save('mittu_recent_q',RS);rsShow();return}
+  if(c.dataset.rsdel!==undefined){RS.splice(parseInt(c.dataset.rsdel,10),1);save('mittu_recent_q',RS);rsShow();return}
+  const q=RS[parseInt(c.dataset.rs,10)];if(q){$('#q').value=q;S.q=q;$('#q').blur();rsShow();render();rsAdd(q)}
+},true);
 function render(){
   renderTabs();
   const m=$('#main');let h='';
@@ -569,7 +643,9 @@ function render(){
   if(q){
     const ws=q.split(/\s+/);
     const r=items.filter(i=>{const s=(i.name+' '+i.hindi).toLowerCase();return ws.every(w=>s.includes(w))});
-    h=r.length?`<section class="sec"><div class="sh"><h2>"${esc(S.q.trim())}" ke natije</h2></div><div class="grid">${r.map(cardHTML).join('')}</div></section>`:'<div class="empty"><b>🔍</b>Kuch nahi mila. Doosra naam try karein.</div>';
+    const oth=gsHTML(ws);
+    h=(r.length?`<section class="sec"><div class="sh"><h2>"${esc(S.q.trim())}" ke natije${ST?' · '+esc(ST.name):''}</h2></div><div class="grid">${r.map(cardHTML).join('')}</div></section>`:'')+oth;
+    if(!h)h='<div class="empty"><b>🔍</b>Kuch nahi mila. Doosra naam try karein.</div>';
   }else if(S.view==='cats'){
     h='<div class="pg"><h2>Categories</h2></div><div class="cgrid">'+usedCats().map(c=>`<button class="ctile" data-cat="${c.id}" data-view="home"><span class="ci" style="background:${c.bg}">${c.e}</span>${esc(c.n)}<small>${catItems(c.id).length} items</small></button>`).join('')+'</div>';
   }else if(S.view==='you'){
@@ -946,7 +1022,9 @@ document.addEventListener('click',e=>{
   if(t.dataset.view&&t.closest('#nav')){S.view=t.dataset.view;S.cat='all';S.q='';$('#q').value='';render();window.scrollTo(0,0);return}
 });
 document.addEventListener('change',e=>{if(e.target.name==='pay'){$('#upiWrap').style.display=e.target.value==='ONLINE'?'block':'none'}if(e.target.name==='pay')$('#placeBtn').textContent=e.target.value==='ONLINE'?'Order Karein aur Pay Karein':'Order Karein';const s=e.target.closest('[data-vsel]');if(s){sel[s.dataset.vsel]=+s.value;repaint(s.dataset.vsel)}});
-let qT;$('#q').addEventListener('input',e=>{clearTimeout(qT);qT=setTimeout(()=>{S.q=e.target.value;render()},180)});
+let qT;$('#q').addEventListener('input',e=>{clearTimeout(qT);clearTimeout(rsT);rsShow();qT=setTimeout(()=>{S.q=e.target.value;render()},180);rsT=setTimeout(()=>rsAdd(e.target.value),1500)});
+$('#q').addEventListener('focus',rsShow);$('#q').addEventListener('blur',()=>setTimeout(rsShow,160));
+$('#q').addEventListener('keydown',e=>{if(e.key==='Enter'){rsAdd($('#q').value);$('#q').blur()}});
 setInterval(()=>{const b=$('#bn');if(!b||document.hidden)return;const w=b.firstElementChild?b.firstElementChild.offsetWidth+10:0;if(!w)return;b.scrollTo({left:(b.scrollLeft+w>b.scrollWidth-w/2)?0:b.scrollLeft+w,behavior:'smooth'})},4500);
 
 /* ---------- Dusri dukaan (Mittu Associated Retailer) ---------- */
