@@ -480,7 +480,7 @@ function cardHTML(it){
   else if(it.v.length>1)chip=`<select class="chip" data-vsel="${esc(it.id)}" aria-label="Unit">${it.v.map((x,i)=>`<option value="${i}"${i===vi?' selected':''}>${esc(uLabel(x.u))}</option>`).join('')}</select>`;
   else chip=`<span class="chip">${esc(uLabel(v.u))}</span>`;
   const price=v?`<div class="price">${inr(v.p)}</div>`:'<div class="price" style="visibility:hidden">₹0</div>';
-  return `<div class="card${it.s?'':' off'}${it.live?'':' soonc'}" data-card="${esc(it.id)}"><div class="pw"><div class="pic${it.store?' sp':''}" style="background:${cat.bg}">${pic}<div class="strip">${chip}</div></div><div class="act">${actHTML(it)}</div></div>${price}<div class="nm">${esc(it.name)}</div>${it.hindi?`<div class="hi">${esc(it.hindi)}</div>`:''}</div>`;
+  return `<div class="card${it.s?'':' off'}${it.live?'':' soonc'}" data-card="${esc(it.id)}"><div class="pw"><div class="pic${it.store?' sp':''}" style="background:${cat.bg}">${pic}<div class="strip">${chip}</div></div><div class="act">${actHTML(it)}</div></div>${price}<div class="nm">${esc(it.name)}${it.vl?` <span style="color:#6b3fc4;font-weight:800">(${esc(it.vl)})</span>`:''}</div>${it.hindi?`<div class="hi">${esc(it.hindi)}</div>`:''}</div>`;
 }
 function repaint(id){
   const it=byId.get(id);if(!it)return;
@@ -995,7 +995,7 @@ function rebuildStore(raw){
     const cn=String(o.c||'Anya Saman').trim()||'Anya Saman';
     const cid='k'+cn.toLowerCase().replace(/[^a-z0-9ऀ-ॿ]+/g,'_');
     if(!cats.has(cid))cats.set(cid,{id:cid,n:cn,e:(ST&&STORE_EM[ST.type])||'🏷️',bg:'#fff'});
-    list.push({id,name:String(o.n),hindi:o.h?String(o.h):'',v,s:!(o.s===0||o.s===false),img:(typeof o.i==='string'&&/^https:\/\//.test(o.i))?o.i:'',live:true,cat:cid,ord:0,basis:'',store:true});
+    list.push({id,name:String(o.n),hindi:o.h?String(o.h):'',v,s:!(o.s===0||o.s===false),img:(typeof o.i==='string'&&/^https:\/\//.test(o.i))?o.i:'',vl:o.vl?String(o.vl):'',live:true,cat:cid,ord:0,basis:'',store:true});
   });
   setCats([...cats.values()].sort((a,b)=>a.n.localeCompare(b.n)));
   items=list.sort((a,b)=>a.name.localeCompare(b.name));byId=new Map(items.map(i=>[i.id,i]));isLive=true;
