@@ -671,10 +671,7 @@ function render(){
     const l=[...seen.values()];
     h=l.length?`<section class="sec"><div class="sh"><h2>🔁 Dobara kharidein</h2></div><div class="grid">${l.map(cardHTML).join('')}</div></section>`:'<div class="empty"><b>🧺</b>Abhi koi purana order nahi hai.<br>Pehla order karte hi saman yahan dikhega.</div>';
   }else if(S.cat==='all'){
-    {const P=prefs(),bl=items.filter(i=>P.buy.has(i.id)).sort((a,b)=>P.buy.get(a.id)-P.buy.get(b.id)).slice(0,6),sl=items.filter(i=>P.srch.has(i.id)).sort((a,b)=>P.srch.get(a.id)-P.srch.get(b.id)).slice(0,6);
-      TOP=new Set(bl.concat(sl).map(i=>i.id));
-      if(bl.length)h+=sec({id:'__b',e:'🛒',n:'Aapne pichli baar kharida'},bl,false);
-      if(sl.length)h+=sec({id:'__s',e:'🔍',n:'Aapne dhundha tha'},sl,false)}
+    TOP=new Set();
     h+=(isLive||ST?'':'<div class="note">⏳ Dukaan ka stock aur daam abhi update ho rahe hain. Thodi der baad dobara dekhein — tab tak saman ki list dekh sakte hain.</div>');
     if(!ST)h+='<div class="banners" id="bn">'+BANNERS.map(b=>`<button class="bn" style="background:${b.ov||'linear-gradient(90deg,rgba(0,0,0,.34) 0%,rgba(0,0,0,.18) 40%,rgba(0,0,0,0) 62%)'},url(${b.i}) ${b.ov?'center':'right center'}/cover no-repeat,${b.g}" data-cat="${b.c}"><b>${esc(b.t)}</b><span>${esc(b.s)}</span></button>`).join('')+'</div>';
     usedCats().forEach(c=>{const l=catItems(c.id).filter(i=>!TOP.has(i.id));if(!l.length)return;h+=sec(c,l.slice(0,6),l.length>6)});
