@@ -499,7 +499,8 @@ function prefs(){
   let r=0;
   hist.slice().reverse().forEach(o=>(o.items||[]).forEach(x=>{if(x&&byId.has(x.id)&&!buy.has(x.id))buy.set(x.id,r++)}));
   r=0;
-  (typeof RS!=='undefined'?RS:[]).slice(0,5).forEach(q=>{
+  (typeof SEEN!=='undefined'?SEEN:[]).forEach(id=>{if(byId.has(id)&&!buy.has(id)&&!srch.has(id))srch.set(id,r++)});
+  (typeof RS!=='undefined'?RS:[]).slice(0,8).forEach(q=>{
     const ws=String(q).toLowerCase().split(/\s+/).filter(Boolean);if(!ws.length)return;
     items.forEach(i=>{if(buy.has(i.id)||srch.has(i.id))return;const t=(i.name+' '+i.hindi).toLowerCase();if(ws.every(w=>t.includes(w)))srch.set(i.id,r++)});
   });
@@ -633,7 +634,11 @@ function gsHTML(ws){
   return h?`<section class="sec" id="gsBox">${h}</section>`:'';
 }
 let RS=load('mittu_recent_q',[]),rsT=null;
-function rsAdd(q){q=String(q||'').trim();if(q.length<2)return;RS=[q].concat(RS.filter(x=>x.toLowerCase()!==q.toLowerCase())).slice(0,8);save('mittu_recent_q',RS)}
+let SEEN=load('mittu_seen',[]);
+function seenAdd(q){const ws=String(q).toLowerCase().split(/\s+/).filter(Boolean);if(!ws.length||typeof items==='undefined')return;
+  const ids=items.filter(i=>{const t=(i.name+' '+i.hindi).toLowerCase();return ws.every(w=>t.includes(w))}).slice(0,12).map(i=>i.id);
+  if(!ids.length)return;SEEN=ids.concat(SEEN.filter(x=>ids.indexOf(x)<0)).slice(0,80);save('mittu_seen',SEEN)}
+function rsAdd(q){q=String(q||'').trim();if(q.length<2)return;try{seenAdd(q)}catch(e){}RS=[q].concat(RS.filter(x=>x.toLowerCase()!==q.toLowerCase())).slice(0,8);save('mittu_recent_q',RS)}
 function rsShow(){
   const b=$('#recentBox');if(!b)return;
   if(!RS.length||$('#q').value.trim()||document.activeElement!==$('#q')){b.style.display='none';return}
