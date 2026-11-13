@@ -674,7 +674,11 @@ function render(){
     TOP=new Set();
     h+=(isLive||ST?'':'<div class="note">⏳ Dukaan ka stock aur daam abhi update ho rahe hain. Thodi der baad dobara dekhein — tab tak saman ki list dekh sakte hain.</div>');
     if(!ST)h+='<div class="banners" id="bn">'+BANNERS.map(b=>`<button class="bn" style="background:${b.ov||'linear-gradient(90deg,rgba(0,0,0,.34) 0%,rgba(0,0,0,.18) 40%,rgba(0,0,0,0) 62%)'},url(${b.i}) ${b.ov?'center':'right center'}/cover no-repeat,${b.g}" data-cat="${b.c}"><b>${esc(b.t)}</b><span>${esc(b.s)}</span></button>`).join('')+'</div>';
-    usedCats().forEach(c=>{const l=catItems(c.id).filter(i=>!TOP.has(i.id));if(!l.length)return;h+=sec(c,l.slice(0,6),l.length>6)});
+    {/* Home: category ke hisaab se nahi — pehle aapne jo kharida, phir jo dhundha, phir baaki */
+      const P=prefs(),all=items.slice().sort((a,b)=>{const d=pkey(P,a)-pkey(P,b);return d||(a.cat===b.cat?(a.ord||0)-(b.ord||0):(+String(a.cat).slice(1))-(+String(b.cat).slice(1)))});
+      const lim=S.more||60,sh=all.slice(0,lim);
+      if(sh.length)h+=`<section class="sec"><div class="grid">${sh.map(cardHTML).join('')}</div></section>`+(all.length>lim?`<div style="text-align:center;padding:6px 0 90px"><button class="lnk" data-more="1" style="font-size:15px;padding:12px 22px;border:1.5px solid var(--blue);border-radius:24px">Aur saman dikhayein (${all.length-lim})</button></div>`:'');
+    }
     if(ST&&!items.length)h+='<div class="empty"><b>🏬</b>Is dukaan ne abhi saman nahi dala hai.<br>Thodi der baad dekhein.</div>';
   }else{
     const c=CATMAP[S.cat];h=c?sec(c,catItems(c.id),false):'';
@@ -1035,6 +1039,7 @@ document.addEventListener('click',e=>{
   if(t.id==='paidBtn'){showOk('Dukaan aapka payment check karke order confirm karega. Zarurat par aapko call aayega.');return}
   if(t.id==='laterBtn'){showOk('Order mil gaya hai. Payment dukaan ko UPI se ya delivery par kar dein.');return}
   if(t.id==='okBtn'){openPage(null);S={view:'home',cat:'all',q:''};$('#q').value='';render();window.scrollTo(0,0);return}
+  if(t.dataset.more){S.more=(S.more||60)+60;render();return}
   if(t.dataset.cat!==undefined){S.cat=t.dataset.cat;S.view=t.dataset.view||'home';S.q='';$('#q').value='';render();window.scrollTo(0,0);return}
   if(t.dataset.view&&t.closest('#nav')){S.view=t.dataset.view;S.cat='all';S.q='';$('#q').value='';render();window.scrollTo(0,0);return}
 });
