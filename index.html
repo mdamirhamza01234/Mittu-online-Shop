@@ -361,6 +361,7 @@ body::after{content:'';position:fixed;top:0;left:0;right:0;height:var(--sat);bac
     <label for="fAddr">Pura pata (gaon / mohalla / landmark)</label><textarea id="fAddr" rows="3" maxlength="250" autocomplete="street-address"></textarea>
     <button type="button" id="geoBtn" style="margin:8px 0 2px;width:100%;padding:11px 10px;border-radius:10px;border:1.5px solid #1a73e8;background:#e8f0fe;color:#0b57d0;font-weight:700;font-size:14px">📍 Meri location bhejein (zaroori)</button>
     <div id="geoSt" style="font-size:12.5px;color:#555;margin-bottom:6px"></div>
+    <div id="nearBox" style="display:none;margin:0 0 10px"></div>
     <label for="fNote">Dukaandar ke liye note (optional)</label><input id="fNote" maxlength="120">
     <label>Payment</label>
     <div class="pay"><label><input type="radio" name="pay" value="COD" checked> Cash on delivery</label><label><input type="radio" name="pay" value="UPI"> UPI (delivery par)</label><label class="payon"><input type="radio" name="pay" value="ONLINE"> 💳 Online payment (abhi pay karein)</label></div>
@@ -739,7 +740,7 @@ function openCo(){
   const p=load('mittu_shop_profile',{});$('#fName').value=p.name||'';$('#fPhone').value=p.phone||'';$('#fAddr').value=p.addr||'';
   $('#coTot').textContent=inr(t);$('#coErr').textContent='';
   {const po=document.querySelector('.payon');const hide=!!(ST&&!ST.upi);if(po)po.style.display=hide?'none':'';if(hide){const c=document.querySelector('input[name=pay][value=COD]');if(c){c.checked=true;$('#upiWrap').style.display='none';$('#placeBtn').textContent='Order Karein'}}}
-  openPage('#pCo');
+  openPage('#pCo');try{coNear()}catch(e){}
 }
 /* ---------- order ---------- */
 let FB=null;
@@ -752,7 +753,26 @@ document.addEventListener('click',async e=>{
   if(g){GEO=g;GPS0={lat:g.lat,lng:g.lng,acc:g.acc};geoStatus()}
   else{st.style.color='#b3261e';st.textContent='Location nahi mili. Phone ki Location ON karke, browser mein permission Allow karein.'}
 });
-function geoStatus(){
+function coNear(){
+  const bx=document.getElementById('nearBox');if(!bx)return;
+  const l=storeLoc();
+  if(!GEO||GEO.pin||!l){bx.style.display='none';return}
+  const d=distM(GEO,l);
+  if(!(d<=100||d<=Math.min(1000,(GEO.acc||0)+l.acc))){bx.style.display='none';return}
+  bx.style.display='block';
+  bx.innerHTML='<div style="background:#e8f5e9;border:1.5px solid #2e7d32;border-radius:12px;padding:10px"><div style="font-size:13px;color:#1b5e20;font-weight:700;margin-bottom:8px">📍 Aap dukaan ke paas lag rahe hain (location ±'+(GEO.acc||0)+' m, dukaan ±'+Math.round(l.acc||0)+' m — dono ghere mil rahe hain). Address aur delivery ke bina sirf Saman list bhej sakte hain.</div><button type="button" id="coWalk" style="width:100%;padding:13px;border:0;border-radius:12px;background:#2e7d32;color:#fff;font-weight:800;font-size:15px">🏪 Sirf Saman list bhejein</button></div>';
+  NEAR_CO={d,g:{lat:GEO.lat,lng:GEO.lng,acc:GEO.acc}};
+}
+let NEAR_CO=null;
+document.addEventListener('click',e=>{
+  if(!(e.target.closest&&e.target.closest('#coWalk')))return;
+  const name=$('#fName').value.trim(),phone=$('#fPhone').value.replace(/\D/g,''),err=$('#coErr');
+  if(name.length<2){err.textContent='Apna naam likhein.';return}
+  if(!/^[6-9]\d{9}$/.test(phone)){err.textContent='Sahi 10 digit mobile number likhein.';return}
+  err.textContent='';NEAR=NEAR_CO||NEAR;walkSubmit(name,phone);
+});
+function geoStatus(){try{coNear()}catch(e){}
+
   const st=document.getElementById('geoSt');if(!st||!GEO)return;
   if(GEO.pin){st.style.color='#0a7a3d';st.innerHTML='📌 Aapke chune hue pin ki location save hui. Delivery wale ko seedha yahi map milega.';return}
   if(GEO.acc>20){st.style.color='#b45309';st.innerHTML='⚠️ Location mil gayi par ±'+GEO.acc+' m ka farq hai (sahi nahi). Behtar hai ki map par apne ghar ka pin lagayein.<br><div style="display:flex;gap:8px;margin-top:6px"><button type="button" id="pinOpen2" style="flex:1;padding:10px 6px;border-radius:10px;border:1.5px solid #b45309;background:#fff7ed;color:#9a3412;font-weight:700;font-size:13.5px">🗺️ Map mein kholke pin drop karein</button><button type="button" id="pinOpen" style="flex:1;padding:10px 6px;border-radius:10px;border:1.5px solid #b45309;background:#fff7ed;color:#9a3412;font-weight:700;font-size:13.5px">📌 Google Map app mein pin</button></div>'}
@@ -840,7 +860,7 @@ document.addEventListener('click',e=>{
 
 /* ---------- WALK-IN: dukaan ke paas (100 m) to "Saman list bhejein" ---------- */
 let LOCMAIN=null,LOCR={},NEAR=null,WALK_ID=null,WALK_UN=null;
-function storeLoc(){const l=ST?LOCR[ST.rid]:LOCMAIN;return(l&&Number(l.lat)&&Number(l.lng))?{lat:Number(l.lat),lng:Number(l.lng)}:null}
+function storeLoc(){const l=ST?LOCR[ST.rid]:LOCMAIN;return(l&&Number(l.lat)&&Number(l.lng))?{lat:Number(l.lat),lng:Number(l.lng),acc:Math.min(Number(l.acc)||0,1000)}:null}
 function distM(a,b){const R=6371000,r=x=>x*Math.PI/180,dl=r(b.lat-a.lat),dn=r(b.lng-a.lng),h=Math.sin(dl/2)**2+Math.cos(r(a.lat))*Math.cos(r(b.lat))*Math.sin(dn/2)**2;return 2*R*Math.asin(Math.sqrt(h))}
 function nearUI(){
   const bp=$('#bPay');if(bp)bp.textContent=NEAR?'🏪 Saman list bhejein':'Payment karein';
@@ -851,7 +871,7 @@ async function checkNear(){
   if(!l){if(NEAR){NEAR=null;nearUI()}return}
   const g=await getGeo(8000);
   const was=!!NEAR;
-  if(g){const d=distM(g,l);NEAR=d<=100?{d,g}:null}
+  if(g){const d=distM(g,l);NEAR=(d<=100||d<=Math.min(1000,(g.acc||0)+l.acc))?{d,g}:null}
   else NEAR=null;
   if(was!==!!NEAR||NEAR)nearUI();
 }
