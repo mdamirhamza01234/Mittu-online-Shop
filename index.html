@@ -495,16 +495,13 @@ function repaint(id){
 }
 /* Personal order: pehle jo kharida tha, phir jo dhundha tha, baaki pehle jaise */
 function prefs(){
-  const buy=new Map(),srch=new Map();
-  let r=0;
-  hist.slice().reverse().forEach(o=>(o.items||[]).forEach(x=>{if(x&&byId.has(x.id)&&!buy.has(x.id))buy.set(x.id,r++)}));
-  r=0;
-  (typeof SEEN!=='undefined'?SEEN:[]).forEach(id=>{if(byId.has(id)&&!buy.has(id)&&!srch.has(id))srch.set(id,r++)});
-  (typeof RS!=='undefined'?RS:[]).slice(0,8).forEach(q=>{
-    const ws=String(q).toLowerCase().split(/\s+/).filter(Boolean);if(!ws.length)return;
-    items.forEach(i=>{if(buy.has(i.id)||srch.has(i.id))return;const t=(i.name+' '+i.hindi).toLowerCase();if(ws.every(w=>t.includes(w)))srch.set(i.id,r++)});
-  });
-  return{buy,srch};
+  /* Behaviour ke hisaab se: jo item sabse haal mein kharida ya search kiya wo sabse pehle */
+  const t=new Map();
+  hist.forEach(o=>(o.items||[]).forEach(x=>{if(x&&byId.has(x.id)){const v=+o.ts||1;if(!t.has(x.id)||t.get(x.id)<v)t.set(x.id,v)}}));
+  (typeof SEEN!=='undefined'?SEEN:[]).forEach(e=>{if(e&&byId.has(e.id)){const v=+e.t||0.5;if(!t.has(e.id)||t.get(e.id)<v)t.set(e.id,v)}});
+  const buy=new Map();let r=0;
+  Array.from(t.entries()).sort((a,b)=>b[1]-a[1]).forEach(e=>buy.set(e[0],r++));
+  return{buy,srch:new Map()};
 }
 function pkey(P,i){return P.buy.has(i.id)?P.buy.get(i.id):P.srch.has(i.id)?1000+P.srch.get(i.id):100000}
 function catItems(c){const P=prefs();return items.filter(i=>i.cat===c).sort((a,b)=>pkey(P,a)-pkey(P,b))}
@@ -634,10 +631,11 @@ function gsHTML(ws){
   return h?`<section class="sec" id="gsBox">${h}</section>`:'';
 }
 let RS=load('mittu_recent_q',[]),rsT=null;
-let SEEN=load('mittu_seen',[]);
+let SEEN=(load('mittu_seen',[])||[]).map(x=>typeof x==='string'?{id:x,t:0.5}:x).filter(x=>x&&x.id);
 function seenAdd(q){const ws=String(q).toLowerCase().split(/\s+/).filter(Boolean);if(!ws.length||typeof items==='undefined')return;
-  const ids=items.filter(i=>{const t=(i.name+' '+i.hindi).toLowerCase();return ws.every(w=>t.includes(w))}).slice(0,12).map(i=>i.id);
-  if(!ids.length)return;SEEN=ids.concat(SEEN.filter(x=>ids.indexOf(x)<0)).slice(0,80);save('mittu_seen',SEEN)}
+  const now=Date.now(),ids=items.filter(i=>{const t=(i.name+' '+i.hindi).toLowerCase();return ws.every(w=>t.includes(w))}).slice(0,12).map(i=>i.id);
+  if(!ids.length)return;const ns=ids.map((id,k)=>({id,t:now-k}));
+  SEEN=ns.concat(SEEN.filter(e=>ids.indexOf(e.id)<0)).slice(0,120);save('mittu_seen',SEEN)}
 function rsAdd(q){q=String(q||'').trim();if(q.length<2)return;try{seenAdd(q)}catch(e){}RS=[q].concat(RS.filter(x=>x.toLowerCase()!==q.toLowerCase())).slice(0,8);save('mittu_recent_q',RS)}
 function rsShow(){
   const b=$('#recentBox');if(!b)return;
